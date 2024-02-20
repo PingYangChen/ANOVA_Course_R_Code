@@ -1,0 +1,19 @@
+---
+title: "Ch02 R Codes"
+author: "Ping-Yang Chen"
+date: "2024-02-23"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Edition. John Wiley & Sons.
+
+# Chapter 2
+
+Read Table 2.1
+```{r, eval=TRUE, echo=TRUE}
+df <- read.csv(file.path("data", "2_TensionBondStrength.csv"))
+```
