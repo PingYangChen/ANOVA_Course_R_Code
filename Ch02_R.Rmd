@@ -68,7 +68,7 @@ sd(df2$Muscle)
 ```
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center'}
-summary(df2)
+summary(df2) 
 ```
 
 
