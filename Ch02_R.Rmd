@@ -15,5 +15,65 @@ Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Ed
 
 Read Table 2.1
 ```{r, eval=TRUE, echo=TRUE}
-df <- read.csv(file.path("data", "2_TensionBondStrength.csv"))
+df1 <- read.csv(file.path("data", "2_TensionBondStrength.csv"))
+```
+
+
+Draw grouped boxplot
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+library(reshape2)
+df1_L <- stack(df1, select = c("ModifiedMortar","UnmodifiedMortar"))
+colnames(df1_L) <- c("Strength", "Mortar")
+boxplot(Strength ~ Mortar, data = df1_L)
+```
+
+- `mean()`
+- `median()`
+- `min()` for the minimum,
+- `max()` for the maximum,
+- `sd()` for the standard deviation and
+- `IQR()` for the interquartile range.
+- The `summary()` function combines several of these statistics into one function call.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+sd(df1$ModifiedMortar)
+sd(df1$UnmodifiedMortar)
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+summary(df1)
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+t.test(df1$ModifiedMortar, df1$UnmodifiedMortar,
+       alternative = "two.sided",
+       paired = FALSE, var.equal = TRUE)
+```
+
+
+
+## t-test unequal variance
+
+Read Table 2.1
+```{r, eval=TRUE, echo=TRUE}
+df2 <- read.csv(file.path("data", "2_Fluorescence.csv"))
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+sd(df2$Nerve)
+sd(df2$Muscle)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+summary(df2)
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+t.test(df2$Nerve, df2$Muscle,
+       alternative = "two.sided",
+       paired = FALSE, var.equal = FALSE)
 ```
