@@ -168,6 +168,20 @@ knitr::include_graphics("image/2_Fluorescence.png")
 ```
 
 ```{r, eval=TRUE, echo=TRUE}
+df2 <- data.frame(
+  Observation = 1:10,
+  Nerve = c(
+    6625, 6000, 5450, 5200, 5175, 4900, 
+    4750, 4500, 3985, 900, 450, 2800
+  ),
+  Muscle = c(
+    3900, 3500, 3450, 3200, 2980, 2800, 
+    2500, 2400, 2200, 1200, 1150, 1130
+  )
+)
+```
+
+```{r, eval=TRUE, echo=TRUE}
 df2 <- read.csv(file.path("data", "2_Fluorescence.csv"))
 ```
 
@@ -211,6 +225,18 @@ Two tips are both available to be used on the hardness testing machine and they 
 The dataset in this subsection is the depth measurements of the depression of 10 metal specimens caused by two different tips of the hardness testing machine. 
 ```{r, echo=FALSE, fig.align='center', out.width='30%', fig.cap='Data for the Hardness Testing Experiment'}
 knitr::include_graphics("image/2_Hardness.png")
+```
+
+```{r, eval=TRUE, echo=TRUE}
+df3 <- data.frame(
+  Specimen = 1:10,
+  Tip1 = c(
+    7, 3, 3, 4, 8, 3, 2, 9, 5, 4
+  ),
+  Tip2 = c(
+    6, 3, 5, 3, 8, 2, 4, 9, 4, 5
+  )
+)
 ```
 
 ```{r, eval=TRUE, echo=TRUE}
