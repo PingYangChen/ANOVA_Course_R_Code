@@ -161,6 +161,16 @@ t.test(df1$ModifiedMortar, df1$UnmodifiedMortar,
 ```
 The test shows that the p-value is 0.0422 which is less than $\alpha$, and therefore we reject $H_0$. That is, the means of the population of the strength of the modified and original Mortar formula are different. The estimated mean strength difference is $\bar{X}_1 - \bar{X}_2 = 16.764 - 17.042 = -0.278$  (`mean(df1$ModifiedMortar) - mena(df1$UnmodifiedMortar)`).
 
+According to the QQ plots, Normality check for the data is passed because, for the observations in each treatment, most of the data points on the QQ plots are closed to the straight line. The equality of variance could be confirmed due to the slopes of the lines on two plots are similar.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+par(mfrow=c(1,2))
+qqnorm(df1$ModifiedMortar, main = "QQ Plot of Modified Mortar")
+qqline(df1$ModifiedMortar, col = "red")
+qqnorm(df1$UnmodifiedMortar, main = "QQ Plot of Unmodified Mortar")
+qqline(df1$UnmodifiedMortar, col = "red")
+```
+
 \newpage
 ## Two-sample t-test for Unequal Variances
 
@@ -220,6 +230,15 @@ t.test(df2$Nerve, df2$Muscle,
 ```
 The test shows that the p-value is 0.01456 which is less than $\alpha$, and therefore we reject $H_0$. That is, the means of the population of the fluorescence of the nerve and the muscle are different. The estimated mean fluorescence difference is $\bar{X}_1 - \bar{X}_2 = 4227.917  2534.167 = 1693.75$  (`mean(df2$Nerve) - mena(df2$Muscle)`).
 
+According to the QQ plots, Normality check for the data is passed because, for the observations in each treatment, most of the data points on the QQ plots are closed to the straight line. By comparing the two QQ plots, we can also confirm the data in each treatment are of unequal variance by observing different slopes of the straight lines.
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+par(mfrow=c(1,2))
+qqnorm(df2$Nerve, main = "QQ Plot of nerve")
+qqline(df2$Nerve, col = "red")
+qqnorm(df2$Muscle, main = "QQ Plot of muscle")
+qqline(df2$Muscle, col = "red")
+```
+
 \newpage
 ## Paired t-test
 
@@ -257,3 +276,5 @@ t.test(df3$Tip1, df3$Tip2,
        paired = TRUE)
 ```
 The test shows that the p-value is 0.7976 which is greater than $\alpha$, and therefore we do not reject $H_0$. That is, there is no evidence to confirm the non-zero mean of the population of the difference between measurements of two tips.
+
+Normality check is needed. I skip the assumption checking process here due to redundancy.
