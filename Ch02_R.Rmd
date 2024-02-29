@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Edition. John Wiley & Sons.
 
+Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
+
 <!--
 ## Know the meaning of the significant level
 
@@ -169,7 +171,7 @@ knitr::include_graphics("image/2_Fluorescence.png")
 
 ```{r, eval=TRUE, echo=TRUE}
 df2 <- data.frame(
-  Observation = 1:10,
+  Observation = 1:12,
   Nerve = c(
     6625, 6000, 5450, 5200, 5175, 4900, 
     4750, 4500, 3985, 900, 450, 2800
@@ -230,12 +232,8 @@ knitr::include_graphics("image/2_Hardness.png")
 ```{r, eval=TRUE, echo=TRUE}
 df3 <- data.frame(
   Specimen = 1:10,
-  Tip1 = c(
-    7, 3, 3, 4, 8, 3, 2, 9, 5, 4
-  ),
-  Tip2 = c(
-    6, 3, 5, 3, 8, 2, 4, 9, 4, 5
-  )
+  Tip1 = c(7, 3, 3, 4, 8, 3, 2, 9, 5, 4),
+  Tip2 = c( 6, 3, 5, 3, 8, 2, 4, 9, 4, 5)
 )
 ```
 
