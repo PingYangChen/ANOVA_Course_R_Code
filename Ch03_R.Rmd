@@ -1,0 +1,17 @@
+---
+title: "Ch-03 R Codes"
+author: "Ping-Yang Chen"
+date: "2024-03-xx"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Edition. John Wiley & Sons.
+
+Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
+
+# Chapter 3
+
