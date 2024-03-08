@@ -15,4 +15,20 @@ Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
 
 # Chapter 3
 
-## One-way
+## One-way ANOVA
+
+```{r, eval=TRUE, echo=TRUE}
+df1 <- read.csv(file.path("data", "3_PlasmaEtching.csv"))
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+summary(df1)
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+# Draw the grouped boxplot
+boxplot(EtchRate ~ Power, data = df1)
+```
