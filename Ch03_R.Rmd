@@ -1,7 +1,7 @@
 ---
 title: "Ch-03 R Codes"
 author: "Ping-Yang Chen"
-date: "2024-03-xx"
+date: "2024-03-15"
 output: pdf_document
 ---
 
@@ -32,3 +32,59 @@ summary(df1)
 # Draw the grouped boxplot
 boxplot(EtchRate ~ Power, data = df1)
 ```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit <- aov(EtchRate ~ Power, data = df1)
+summary(fit)
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+mean(df1$EtchRate) # Overall
+mean(df1$EtchRate[df1$Power == 160]) - mean(df1$EtchRate) # tau_1  
+mean(df1$EtchRate[df1$Power == 180]) - mean(df1$EtchRate) # tau_2  
+mean(df1$EtchRate[df1$Power == 200]) - mean(df1$EtchRate) # tau_3  
+mean(df1$EtchRate[df1$Power == 220]) - mean(df1$EtchRate) # tau_4
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+if (!("agricolae" %in% rownames(installed.packages()))) {
+  install.packages("agricolae")  
+}
+library(agricolae)
+out <- LSD.test(fit, "Power")
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
+par(mfrow = c(2, 2))
+plot(fit)
+par(mfrow = c(1, 1))
+```
+
+
+
+## Box-Cox Transformation
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
+library(MASS)
+bc_tune <- boxcox(EtchRate ~ Power, data = df1, plotit = TRUE)
+# Obtain the best lambda value
+lambda <- bc_tune$x[which.max(bc_tune$y)]
+# Construct the regression model with Box-Cox transformation
+bc_mdl <- aov( I((EtchRate^lambda - 1)/lambda) ~ Power, data = df1)
+#summary(bc_demo_mdl)
+#anova(bc_demo_mdl)
+par(mfrow = c(1, 2))
+plot(bc_mdl, which = 1)
+plot(bc_mdl, which = 2)
+par(mfrow = c(1, 1))
+```
+
+
+
+
+
+
