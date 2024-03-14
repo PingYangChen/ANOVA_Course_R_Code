@@ -1,0 +1,77 @@
+---
+title: "Ch-04 R Codes"
+author: "Ping-Yang Chen"
+date: "2024-03-xx"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Edition. John Wiley & Sons.
+
+Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
+
+# Chapter 4
+
+```{r, eval=FALSE, echo=FALSE}
+coupon_no <- rep(1:4, each = 4)
+tip_no <- rep(sprintf("tip%d", 1:4), 4)
+set.seed(1)
+crd <- sample(1:16, 16)
+tip_run <- tip_no[crd]
+data.frame(rbind(coupon_no, tip_run))
+```
+
+
+## Randomized Complete Block Designs
+
+```{r, eval=TRUE, echo=TRUE}
+df1 <- read.csv(file.path("data", "4_VascularGraft.csv"))
+df1$ExtPressure <- as.factor(df1$ExtPressure)
+df1$ResinBatchNo <- as.factor(df1$ResinBatchNo)
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+summary(df1)
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8}
+# Draw the grouped boxplot
+par(mfrow = c(1, 2))
+boxplot(Yield ~ ExtPressure, data = df1)
+boxplot(Yield ~ ResinBatchNo, data = df1)
+par(mfrow = c(1, 1))
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit <- aov(Yield ~ ExtPressure + ResinBatchNo, data = df1)
+summary(fit)
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
+par(mfrow = c(2, 2))
+plot(fit)
+par(mfrow = c(1, 1))
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+TukeyHSD(fit)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+if (!("agricolae" %in% rownames(installed.packages()))) {
+  install.packages("agricolae")  
+}
+library(agricolae)
+out <- LSD.test(fit, "ExtPressure", p.adj = "bonferroni")
+out$group
+```
+

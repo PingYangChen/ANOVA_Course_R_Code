@@ -17,46 +17,41 @@ Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
 
 ## One-way ANOVA
 
+Read the csv file `3_PlasmaEtching.csv` in R. Make sure that in the `data.frame` the variable `Power` is a factor. If not sure, apply `as.factor()` function to set the property of the variable `Power` after reading the dataset.
 ```{r, eval=TRUE, echo=TRUE}
 df1 <- read.csv(file.path("data", "3_PlasmaEtching.csv"))
+df1$Power <- as.factor(df1$Power)
 ```
 
+To compute descriptive statistics of the data in each subgroup of a dataset in R, we use `tapply()`.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center'}
-summary(df1)
+```{r, eval=TRUE, echo=TRUE}
+tapply(df1$EtchRate, df1$Power, summary)
 ```
 
-
-
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+Alternatively, boxplots provide a quick and direct means of observing the differences among the responses of the four treatments (groups or levels of a factor).
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
 # Draw the grouped boxplot
 boxplot(EtchRate ~ Power, data = df1)
 ```
 
 
+The function `aov()` fits the ANOVA model. For one-way ANOVA, the command is as follows. Then, we call `summary()` to examine the ANOVA table.
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
 fit <- aov(EtchRate ~ Power, data = df1)
 summary(fit)
 ```
 
 
+## Model Adequacy Checking
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
-mean(df1$EtchRate) # Overall
-mean(df1$EtchRate[df1$Power == 160]) - mean(df1$EtchRate) # tau_1  
-mean(df1$EtchRate[df1$Power == 180]) - mean(df1$EtchRate) # tau_2  
-mean(df1$EtchRate[df1$Power == 200]) - mean(df1$EtchRate) # tau_3  
-mean(df1$EtchRate[df1$Power == 220]) - mean(df1$EtchRate) # tau_4
-```
+The adequacy of an ANOVA model can be studied from residual plots. The basic approach is to use the `plot()` function with the fitted ANOVA model object as its input argument. Since there are four residual plots, we can use `par(mfrow = c(2, 2))` before the `plot()` function to view all of them simultaneously.
 
+The first (upper left) plot is the residual plot against the fitted values. This plot is used to check the consistency of the variance with changes in the fitted value. A lack of any visually obvious pattern in the dots on the plot is desired.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
-if (!("agricolae" %in% rownames(installed.packages()))) {
-  install.packages("agricolae")  
-}
-library(agricolae)
-out <- LSD.test(fit, "Power")
-```
+The second (upper right) plot is the residuals' Normal Quantile-Quantile (QQ) plot. Ideally, the dots form a straight line.
+
+The remaining two plots at the bottom are standardized residuals against the fitted values and standardized residuals against the factor levels, respectively. They are also used to check the consistency of the variance.
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
 par(mfrow = c(2, 2))
@@ -65,26 +60,291 @@ par(mfrow = c(1, 1))
 ```
 
 
+## Post-ANOVA Comparison of Means
 
-## Box-Cox Transformation
+The estimate of the overall mean $\mu$ and the Power's treatment effects $\tau_1$ to $\tau_4$ are
+\begin{align*}
+\hat{\mu} = \frac{1}{an}\sum_{i=1}^a\sum_{j=1}^n y_{ij} = \bar{y}_{\cdot\cdot}; & \\
+\hat{\tau}_1 = \frac{1}{n}\sum_{j=1}^n y_{1j} - \hat{\mu} = \bar{y}_{1\cdot} - \bar{y}_{\cdot\cdot}; & 
+\hat{\tau}_2 = \frac{1}{n}\sum_{j=1}^n y_{2j} - \hat{\mu} = \bar{y}_{2\cdot} - \bar{y}_{\cdot\cdot}; \\
+\hat{\tau}_3 = \frac{1}{n}\sum_{j=1}^n y_{3j} - \hat{\mu} = \bar{y}_{3\cdot} - \bar{y}_{\cdot\cdot}; & 
+\hat{\tau}_4 = \frac{1}{n}\sum_{j=1}^n y_{4j} - \hat{\mu} = \bar{y}_{4\cdot} - \bar{y}_{\cdot\cdot}. \\
+\end{align*}
+The R codes are as follows.
+```{r, eval=FALSE, echo=TRUE, fig.align='center', fig.width=4}
+mean(df1$EtchRate) # Overall
+mean(df1$EtchRate[df1$Power == 160]) - mean(df1$EtchRate) # tau_1  
+mean(df1$EtchRate[df1$Power == 180]) - mean(df1$EtchRate) # tau_2  
+mean(df1$EtchRate[df1$Power == 200]) - mean(df1$EtchRate) # tau_3  
+mean(df1$EtchRate[df1$Power == 220]) - mean(df1$EtchRate) # tau_4
+```
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
-library(MASS)
-bc_tune <- boxcox(EtchRate ~ Power, data = df1, plotit = TRUE)
-# Obtain the best lambda value
-lambda <- bc_tune$x[which.max(bc_tune$y)]
-# Construct the regression model with Box-Cox transformation
-bc_mdl <- aov( I((EtchRate^lambda - 1)/lambda) ~ Power, data = df1)
-#summary(bc_demo_mdl)
-#anova(bc_demo_mdl)
-par(mfrow = c(1, 2))
-plot(bc_mdl, which = 1)
-plot(bc_mdl, which = 2)
-par(mfrow = c(1, 1))
+Following an ANOVA in which we have rejected the null hypothesis of equal treatment means, we wish to test all pairwise mean comparisons:
+\begin{align*}
+H_0:~\mu_i = \mu_j \\
+H_1:~\mu_i \neq \mu_j \\
+\end{align*}
+for all $i\neq j$. Here, we introduce three approaches.
+
+
+**Pairwise t-tests**
+
+The straightforward approach to test for all pairs of the hypotheses is to conduct the Pairwise t-tests simultaneously. The following codes give the results under Bonferroni adjustment on the p-value.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+pairwise.t.test(df1$EtchRate, df1$Power, p.adjust = "bonferroni")
 ```
 
 
+**Tukey’s Test** 
+
+Tukey’s procedure makes use of the distribution of the studentized range statistic
+$$
+q = \frac{\bar{y}_{max} - \bar{y}_{min}}{\sqrt{MS_E / n}}
+$$
+where $\bar{y}_{max}$ and $\bar{y}_{min}$ are the largest and smallest sample means respectively, out of a group of $p$ sample means. For equal sample sizes, Tukey’s test declares two means significantly different if the absolute value of
+their sample differences exceeds
+$$
+T_\alpha = q_\alpha(a, f)\sqrt{\frac{MS_E}{n}}
+$$
+where $q_\alpha(a, f)$ is the upper $\alpha$ percentage points of $q$ and $f$ is the number of degrees of freedom associated with the $MS_E$. For more insights on the distribution of $q$, please refer to the textbook. Tukey's method is performed by the function `TukeyHSD()`.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+TukeyHSD(fit)
+```
+
+
+**Fisher’s LSD Method** 
+
+The R package **agricolae** provides the function `LSD.test()` to perform Fisher's LSD test. Adjustment for the P-value is necessary. Typically, we set `p.adj = "bonferroni"` for the Bonferroni method.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+if (!("agricolae" %in% rownames(installed.packages()))) {
+  install.packages("agricolae")  
+}
+library(agricolae)
+out <- LSD.test(fit, "Power", p.adj = "bonferroni")
+print(out)
+```
+
+
+The most important parts of the outputs are shown below:
+
+- `$means` displays the estimated mean of the etching rate at each level of power.
+- `$groups` indicates the significance of the difference in the etching rate at each level of power. The column groups in `$groups` encodes the treatment levels with no significant difference in the etching rate by the same alphabet letter.
+
+
+\newpage
+## Simluate for Observing Robustness of ANOVA
+
+
+### The Error is Normally Distributed
+
+Understand the meaning of the type I error. 
+
+The effect model is defined as
+$$
+y_{ij} = \mu + \tau_i + \varepsilon_{ij}, i = 1, \ldots, a, j = 1, \ldots, n
+$$
+where the error is assumed Normally distributed with mean 0 and variance $\sigma^2$.
+$$
+\varepsilon_{ij} \sim N(0, \sigma^2)
+$$
+
+
+The simulation is based on the Completely Randomized Design (CRD) of one factor with $a = 4$ treatment levels. The parameters of the true model are set as follows:
+```{r sim_setup, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+mu_t <- 0 # the true overall mean
+tau_t <- c(-3, -1, 1, 3) # the true effects of the 4 levels
+a <- length(tau_t)
+n <- 5 # sample size of a treatment level
+x <- as.factor(rep(1:a, each = n))
+sig <- 2 # assumed standard deviation of the normal distribution
+```
+
+Let the significance level to be 0.05 and the simulation below creates 2000 independent scenarios with the data that under the null hypothesis $\tau_1 = ... = \tau_a = 0$. The aim is to count how many times, out of 2000 scenarios, that the F-tests reject $H_0$ when $H_0$ is known to be true.
+```{r sim_norm, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+alpha <- 0.05 # significance level
+n_sim <- 2000
+indv_res <- vector("list", length = n_sim)
+# Simulate n_sim times with different data randomly drawn from the fixed population
+for (i in 1:n_sim) {
+  set.seed(i) # set seed for reproducity
+  # Generate response with Normal error 
+  # under Null hypothesis \tau_1 = ... = \tau_a = 0
+  y <- mu_t + rnorm(n*a, 0, sig)
+  # compute ANOVA table and save the p-value
+  fit <- aov(y ~ x)
+  fit_sum <- summary(fit)
+  pval <- fit_sum[[1]][1, 5]
+  indv_res[[i]] <- list(
+    "y" = y,
+    "fit" = fit,
+    "signif" = pval < alpha
+  )
+}
+# Count the times that the F-test rejects H_0 when H_0 is true (type I error)
+indv_signif <- sapply(1:n_sim, function(i) indv_res[[i]]$signif)
+sim_t1e <- sum(indv_signif)/n_sim
+print(sim_t1e)
+```
+
+The simulation shows that there are `r sum(indv_signif)` out of 2000 scenarios that, although $H_0$ is true, the F-test still reject $H_0$. Therefore, the simulated type I error is `r sim_t1e`, which is closed to the claimed significance level 0.05.
+
+
+The baseline of the type II error is also necessary so that we can observe type II errors when changing the error assumption. To simulate the type II error, the response is the sum of the true overall, the true effects and the random error.
+```{r sim_norm2, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+alpha <- 0.05 # significance level
+n_sim <- 2000
+indv_res_2 <- vector("list", length = n_sim)
+# Simulate n_sim times with different data randomly drawn from the fixed population
+for (i in 1:n_sim) {
+  set.seed(i) # set seed for reproducity
+  # Generate response with Normal error 
+  # under Alternative hypothesis with true effect \tau = c(-3, -1, 1, 3)
+  effects <- rep(tau_t, each = n)
+  y <- mu_t + effects + rnorm(n*a, 0, sig)
+  # compute ANOVA table and save the p-value
+  fit <- aov(y ~ x)
+  fit_sum <- summary(fit)
+  pval <- fit_sum[[1]][1, 5]
+  indv_res_2[[i]] <- list(
+    "y" = y,
+    "fit" = fit,
+    "signif" = pval < alpha
+  )
+}
+# Count the times that the F-test does not rejects H_0 when H_1 is true (type II error)
+indv_signif_2 <- sapply(1:n_sim, function(i) indv_res_2[[i]]$signif)
+sim_t2e <- sum(1 - indv_signif_2)/n_sim
+print(sim_t2e)
+```
+The simulation shows that there are `r sum(1 - indv_signif_2)` out of 2000 scenarios that, when $H_1$ is true, the F-test fails to reject $H_0$. Therefore, the simulated type II error is `r sim_t2e`.
+
+
+### The Error is not Normally Distributed
+
+
+When the assumption of Normally distributed error is broken, the probability of F-test making mistakes may no longer to be easily controlled at the pre-specified significance level 0.05. Let's replace the Normal distribution of the simulation setup by, for example, Exponential distribution and see the resulting type I error.
+```{r sim_exp, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+alpha <- 0.05 # significance level
+n_sim <- 2000
+indv_res_exp <- vector("list", length = n_sim)
+# Simulate n_sim times with different data randomly drawn from the fixed population
+for (i in 1:n_sim) {
+  set.seed(i) # set seed for reproducity
+  # Generate response with Exponentially distributed error 
+  # under Null hypothesis \tau_1 = ... = \tau_a = 0
+  y <- mu_t + rexp(n*a, 0.5)
+  # compute ANOVA table and save the p-value
+  fit <- aov(y ~ x)
+  fit_sum <- summary(fit)
+  pval <- fit_sum[[1]][1, 5]
+  indv_res_exp[[i]] <- list(
+    "y" = y,
+    "fit" = fit,
+    "signif" = pval < alpha
+  )
+}
+# Count the times that the F-test rejects H_0 when H_0 is true (type I error)
+indv_signif_exp <- sapply(1:n_sim, function(i) indv_res_exp[[i]]$signif)
+sim_t1e_exp <- sum(indv_signif_exp)/n_sim
+print(sim_t1e_exp)
+```
+The simulation shows that there are `r sum(indv_signif_exp)` out of 2000 scenarios that the F-test still reject $H_0$ when $H_0$ is true. That is, the simulated type I error is `r sim_t1e_exp` when assume Exponentially distributed error, which is less than the claimed significance level 0.05.
 
 
 
+Let's check the type II error of the F-test when the population of the random error is not Normal distribution.
+```{r sim_exp2, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+alpha <- 0.05 # significance level
+n_sim <- 2000
+indv_res_exp_2 <- vector("list", length = n_sim)
+# Simulate n_sim times with different data randomly drawn from the fixed population
+for (i in 1:n_sim) {
+  set.seed(i) # set seed for reproducity
+  # Generate response with Exponentially distributed error 
+  # under Alternative hypothesis with true effect \tau = c(-3, -1, 1, 3)
+  effects <- rep(tau_t, each = n)
+  y <- mu_t + effects + rexp(n*a, 0.5)
+  # compute ANOVA table and save the p-value
+  fit <- aov(y ~ x)
+  fit_sum <- summary(fit)
+  pval <- fit_sum[[1]][1, 5]
+  indv_res_exp_2[[i]] <- list(
+    "y" = y,
+    "fit" = fit,
+    "signif" = pval < alpha
+  )
+}
+# Count the times that the F-test does not rejects H_0 when H_1 is true (type II error)
+indv_signif_exp_2 <- sapply(1:n_sim, function(i) indv_res_exp_2[[i]]$signif)
+sim_t2e_exp <- sum(1 - indv_signif_exp_2)/n_sim
+print(sim_t2e_exp)
+```
+
+The simulated type II error is `r sim_t2e_exp` when assume Exponentially distributed error, which is more than twice as the type II error in the case of Normal assumption.
+
+
+
+### The Error is Normally Distributed but Variance Is Inconsistent
+
+
+
+When the assumption of constant variance is broken, the probability of F-test making mistakes may no longer to be easily controlled at the pre-specified significance level 0.05. To observe the consequence of the violation of the constant variance assumption, let's varying the variance of the random error by treatment levels and see the resulting type I error.
+```{r sim_ncv, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+alpha <- 0.05 # significance level
+n_sim <- 2000
+indv_res_ncv <- vector("list", length = n_sim)
+# Simulate n_sim times with different data randomly drawn from the fixed population
+for (i in 1:n_sim) {
+  set.seed(i) # set seed for reproducity
+  # Generate response with Normal error but vary the variance across treatment levels
+  # under Null hypothesis \tau_1 = ... = \tau_a = 0
+  err_multi <- rep(1:a, each = n)
+  y <- mu_t + rnorm(n*a)*err_multi
+  # compute ANOVA table and save the p-value
+  fit <- aov(y ~ x)
+  fit_sum <- summary(fit)
+  pval <- fit_sum[[1]][1, 5]
+  indv_res_ncv[[i]] <- list(
+    "y" = y,
+    "fit" = fit,
+    "signif" = pval < alpha
+  )
+}
+# Count the times that the F-test rejects H_0 when H_0 is true (type I error)
+indv_signif_ncv <- sapply(1:n_sim, function(i) indv_res_ncv[[i]]$signif)
+sim_t1e_ncv <- sum(indv_signif_ncv)/n_sim
+print(sim_t1e_ncv)
+```
+The simulation shows that there are `r sum(indv_signif_ncv)` out of 2000 scenarios that the F-test still reject $H_0$ when $H_0$ is true. That is, the simulated type I error is `r sim_t1e_ncv` for Normally distributed error with inconsistent variance, which is larger to the claimed significance level 0.05.
+
+
+
+```{r sim_ncv2, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+alpha <- 0.05 # significance level
+n_sim <- 2000
+indv_res_ncv_2 <- vector("list", length = n_sim)
+# Simulate n_sim times with different data randomly drawn from the fixed population
+for (i in 1:n_sim) {
+  set.seed(i) # set seed for reproducity 
+  # Generate response with Normal error but vary the variance across treatment levels
+  # under Alternative hypothesis with true effect \tau = c(-3, -1, 1, 3)
+  effects <- rep(tau_t, each = n)
+  err_multi <- rep(1:a, each = n)
+  y <- mu_t + effects + rnorm(n*a)*err_multi
+  # compute ANOVA table and save the p-value
+  fit <- aov(y ~ x)
+  fit_sum <- summary(fit)
+  pval <- fit_sum[[1]][1, 5]
+  indv_res_ncv_2[[i]] <- list(
+    "y" = y,
+    "fit" = fit,
+    "signif" = pval < alpha
+  )
+}
+# Count the times that the F-test does not rejects H_0 when H_1 is true (type II error)
+indv_signif_ncv_2 <- sapply(1:n_sim, function(i) indv_res_ncv_2[[i]]$signif)
+sim_t2e_ncv <- sum(1 - indv_signif_ncv_2)/n_sim
+print(sim_t2e_ncv)
+```
+The simulated type II error is `r sim_t2e_ncv` when the variance is not constant, which much more than the type II error in the case of Normal assumption.
 

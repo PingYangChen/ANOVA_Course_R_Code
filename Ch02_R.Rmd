@@ -61,7 +61,7 @@ knitr::include_graphics("image/2_TensionBondStrength.png")
 df1 <- read.csv(file.path("data", "2_TensionBondStrength.csv"))
 ```
 
-Descrptive statistics are enssential when observing a dataset. In R, basic functions `mean()`, `median()`, `min()`, `max()`, `quantile()` and etc computes the central tendency of an univariate variable. There are also functions for computing the variation of an univariate variable, such as `var()`, `sd()`, `IQR()` and `range()`. The `summary()` function combines several of these statistics into one function call.
+Descriptive statistics are essential when observing a dataset. In R, basic functions `mean()`, `median()`, `min()`, `max()`, `quantile()` and etc computes the central tendency of an univariate variable. There are also functions for computing the variation of an univariate variable, such as `var()`, `sd()`, `IQR()` and `range()`. The `summary()` function combines several of these statistics into one function call.
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center'}
 summary(df1)
