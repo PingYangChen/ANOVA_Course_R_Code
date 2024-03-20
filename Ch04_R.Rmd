@@ -27,6 +27,8 @@ data.frame(rbind(coupon_no, tip_run))
 
 ## Randomized Complete Block Designs
 
+Read the csv file `4_VascularGraft.csv` in R. Make sure that in the `data.frame` the variables `ExtPressure` and `ResinBatchNo` are the type of factor. If not sure, apply `as.factor()` on those variables after reading the dataset.
+
 ```{r, eval=TRUE, echo=TRUE}
 df1 <- read.csv(file.path("data", "4_VascularGraft.csv"))
 df1$ExtPressure <- as.factor(df1$ExtPressure)
@@ -35,35 +37,48 @@ df1$ResinBatchNo <- as.factor(df1$ResinBatchNo)
 
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center'}
-summary(df1)
+tapply(df1$Yield, df1$ExtPressure, summary)
 ```
 
-
+Use boxplots to observe the differences of `Yield` among four treatments of `ExtPressure`, and, the differences of `Yield` among six resin batches `ResinBatchNo`. The average `Yield` tends to be lower for higher `ExtPressure` and varies in different `ResinBatchNo`. Thus, to investigate the `ExtPressure` effect on the `Yield`, we must eliminate the effect caused by `ResinBatchNo`. That is, we treat `ResinBatchNo` as the block effect.
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8}
 # Draw the grouped boxplot
 par(mfrow = c(1, 2))
 boxplot(Yield ~ ExtPressure, data = df1)
 boxplot(Yield ~ ResinBatchNo, data = df1)
+```
+```{r, eval=TRUE, echo=FALSE}
 par(mfrow = c(1, 1))
 ```
 
 
+The function `aov()` fits the ANOVA model, and the ANOVA table is obtained by calling `summary()`. For Randomized Complete Block Design (RCBD), the R model formula includes two items on its right-hand-side: `ExtPressure + ResinBatchNo`. It's important to note that the order of placing the factor and block effects is somewhat arbitrary for RCBD. However, this order matters if the design is incomplete, as some sums of squares are adjusted accordingly.
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
-fit <- aov(Yield ~ ExtPressure + ResinBatchNo, data = df1)
-summary(fit)
+fit1 <- aov(Yield ~ ExtPressure + ResinBatchNo, data = df1)
+summary(fit1)
 ```
 
-
+The procedure of diagnosing the residual is similar to that for the one-way ANOVA model. Please refer to the handout of R codes in Chapter 3 for more details of interpreting the residual plots.
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
 par(mfrow = c(2, 2))
-plot(fit)
+plot(fit1)
+```
+```{r, eval=TRUE, echo = FALSE}
 par(mfrow = c(1, 1))
 ```
 
+One additional plot is to draw the scatter plot of the residual against the levels of the block. A lack of any visually obvious pattern in the dots on the plot is desired.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
+plot(
+  as.numeric(df1$ResinBatchNo), fit1$residuals,
+  xlab = "ResinBatchNo", ylab = "residuals"
+)
+```
+Multiple comparison is performed for the treatment effect. The following codes demonstrate the use of Tukey’s test and Fisher's LSD method. For Tukey’s test, add the input argument `which = "ExtPressure"` to only show the test results of comparing differences among the `ExtPressure` levels. For Fisher's LSD method, specify `trt = "ExtPressure"` as the input argument to the `LSD.test()` function to show the comparison results among the `ExtPressure` levels. For information of interpreting the results, please refer to the handout of R codes in Chapter 3.
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
-TukeyHSD(fit)
+TukeyHSD(fit1, which = "ExtPressure")
 ```
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
@@ -71,7 +86,168 @@ if (!("agricolae" %in% rownames(installed.packages()))) {
   install.packages("agricolae")  
 }
 library(agricolae)
-out <- LSD.test(fit, "ExtPressure", p.adj = "bonferroni")
+out <- LSD.test(fit1, trt = "ExtPressure", p.adj = "bonferroni")
 out$group
 ```
+
+## Latin Square Designs
+
+Read the csv file `4_RocketPropellant.csv` in R. Make sure that in the `data.frame` the variables `RawMaterialBatch`, `Operator` and `Formulation` are the type of factor. If not sure, apply `as.factor()` on those variables after reading the dataset.
+```{r, eval=TRUE, echo=TRUE}
+df2 <- read.csv(file.path("data", "4_RocketPropellant.csv"))
+df2$RawMaterialBatch <- as.factor(df2$RawMaterialBatch)
+df2$Operator <- as.factor(df2$Operator)
+df2$Formulation <- as.factor(df2$Formulation)
+```
+The boxplots shows the distributions of `BurningRate` under subgroups of (left) five treatments of `Formulation`; (middle) five levels of the first block `RawMaterialBatch`; (right) five levels of the second block `Operator`.
+The left plot suggests that there may be differences in the `BurningRate` among the different `Formulations` used. The middle and right plots, show the `BurningRate` behaves differently within each level of blocks. Thus, the AONVA model must take the block effects into account.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=9}
+# Draw the grouped boxplot
+par(mfrow = c(1, 3))
+boxplot(BurningRate ~ Formulation, data = df2)
+boxplot(BurningRate ~ RawMaterialBatch, data = df2)
+boxplot(BurningRate ~ Operator, data = df2)
+```
+```{r, eval=TRUE, echo = FALSE}
+par(mfrow = c(1, 1))
+```
+
+Again, functions `aov()` fits the ANOVA model followed by calling `summary()` to obtain the ANOVA table. For Latin Square Designs, the R model formula includes three items on its right-hand-side: `Formulation + RawMaterialBatch + Operator`. Similar to RCBD, the order of placing the factor and block effects is arbitrary here.
+```{r, eval=TRUE, echo=TRUE}
+fit2 <- aov(BurningRate ~ Formulation + RawMaterialBatch + Operator, data = df2)
+summary(fit2)
+```
+
+
+The procedures of diagnosing the residual and multiple comparison are similar to those for the RCBD. Please refer to the previous section for more details.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
+par(mfrow = c(2, 2))
+plot(fit2)
+```
+```{r, eval=TRUE, echo = FALSE}
+par(mfrow = c(1, 1))
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+par(mfrow = c(1, 2))
+plot(
+  as.numeric(df2$RawMaterialBatch), fit2$residuals,
+  xlab = "RawMaterialBatch", ylab = "residuals"
+)
+plot(
+  as.numeric(df2$Operator), fit2$residuals,
+  xlab = "Operator", ylab = "residuals"
+)
+```
+```{r, eval=TRUE, echo = FALSE}
+par(mfrow = c(1, 1))
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+if (!("agricolae" %in% rownames(installed.packages()))) {
+  install.packages("agricolae")  
+}
+library(agricolae)
+out <- LSD.test(fit2, "Formulation", p.adj = "bonferroni")
+out$group
+```
+
+
+
+
+
+## Balanced Incomplete Block Design
+
+Read the csv file `4_Catalysts.csv` in R. Make sure that in the `data.frame` the variables `RawMaterialBatch` and `Catalysts` are the type of factor. If not sure, apply `as.factor()` on those variables after reading the dataset.
+```{r, eval=TRUE, echo=TRUE}
+df3 <- read.csv(file.path("data", "4_Catalysts.csv"))
+df3$RawMaterialBatch <- as.factor(df3$RawMaterialBatch)
+df3$Catalysts <- as.factor(df3$Catalysts)
+```
+This burning rate experiment data is obtained by the balanced incomplete block design (BIBD) with $a=4$ `Catalysts` treatment levels and $b=4$ `RawMaterialBatch` block levels. Each treatment levels are performed in $r=3$ blocks, and in each block, $k=3$ treatment levels are performed. The effect model is 
+$$
+y_{ij} = \mu + \tau_i + \beta_j + \varepsilon_{ij},~i=1,...,4,~j=1,...,4
+$$
+where $\tau_i$ denotes the treatment effect of types of `Catalysts` and $\beta_j$ denotes the block effect of the `RawMaterialBatch`.
+
+If the design is BIBD, the adjusted treatment sum of squares is
+$$
+SS_{Treatment(adj)} = \frac{k\sum_{i=1}^b Q_i^2}{\lambda a} = \frac{3\sum_{i=1}^4 Q_i^2}{4\lambda}
+$$
+where $\lambda = \frac{r(k-1)}{a-1} = \frac{3\cdot 2}{3}=2$ and 
+$$
+Q_i = y_{i\cdot}-\frac{1}{k}\sum_{j=1}^b n_{ij} y_{\cdot j} = y_{i\cdot}-\frac{1}{3}\sum_{j=1}^4 n_ij y_{\cdot j}
+$$ 
+for $i=1,...,4$, and, $n_{ij} = 1$ if the $i$th treatment level appears in block $j$ and $n_{ij} = 0$ otherwise. Let's compute $SS_{Treatment(adj)}$ by ourselves in R first.
+```{r, eval=TRUE, echo=TRUE}
+appears <- tapply(df3$RawMaterialBatch, df3$Catalyst, table)
+y_i_dot <- tapply(df3$ReactionTime, df3$Catalysts, sum)
+y_dot_j <- tapply(df3$ReactionTime, df3$RawMaterialBatch, sum)
+q <- numeric(4)
+for (i in 1:4) {
+  n_i_j <- appears[[i]]
+  q[i] <- y_i_dot[i] - (1/3)*sum(n_i_j*y_dot_j)
+}
+SS_Treatment_adj <- 3*sum(q^2)/(2*4)
+SS_Treatment_adj
+```
+
+To obtain the ANOVA table with the adjusted treatment sum of squares for BIBD in R, keep the block effect in the first place of the R model formula for the `aov` function.
+```{r, eval=TRUE, echo=TRUE}
+fit3_treatment <- aov(ReactionTime ~ RawMaterialBatch + Catalysts, data = df3)
+summary(fit3_treatment)
+```
+
+Likewise, if one is interested to test the significance of the block effect, then the block sum of squares should be adjusted. In R, the adjusted block sum of squares is obtained by placing the ''treatment effect'' in the first place of the R model formula for the `aov` function.
+```{r, eval=TRUE, echo=TRUE}
+fit3_block <- aov(ReactionTime ~ Catalysts + RawMaterialBatch, data = df3)
+summary(fit3_block)
+```
+
+
+The R package **ibd** provides the function `aov.ibd` to compute the adjusted treatment and block sum of squares at the same time.
+```{r, eval=TRUE, echo=TRUE}
+if (!("ibd" %in% rownames(installed.packages()))) {
+  install.packages("ibd")
+}
+library(ibd)
+fit3 <- aov.ibd(ReactionTime ~ Catalysts + RawMaterialBatch, data = df3)
+fit3
+```
+
+
+The procedures of diagnosing the residual and multiple comparison are similar to those for the RCBD. Please refer to the previous section for more details.
+
+```{r, eval=TRUE, echo=TRUE, fig.width=8, fig.height=8}
+# Residual Checking: 
+#   can use any aov model fit3_treatment or fit3_block
+par(mfrow = c(2, 2))
+plot(fit3_treatment)
+```
+
+```{r, eval=TRUE, echo = FALSE}
+par(mfrow = c(1, 1))
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
+plot(
+  as.numeric(df3$RawMaterialBatch), fit3_treatment$residuals,
+  xlab = "RawMaterialBatch", ylab = "residuals"
+)
+```
+
+
+```{r, eval=TRUE, echo=TRUE}
+if (!("agricolae" %in% rownames(installed.packages()))) {
+  install.packages("agricolae")  
+}
+library(agricolae)
+out <- LSD.test(fit3_treatment, "Catalysts", p.adj = "bonferroni")
+out$group
+```
+
+
 
