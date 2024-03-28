@@ -1,0 +1,244 @@
+---
+title: "Ch-05 R Codes"
+author: "Ping-Yang Chen"
+date: "2024-03-xx"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Edition. John Wiley & Sons.
+
+Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
+
+# Chapter 5
+
+
+```{r, eval=TRUE, echo=TRUE}
+demo1 <- read.csv(file.path("data", "5_TwoFactorDesign.csv"))
+demo2 <- read.csv(file.path("data", "5_TwoFactorDesignInteraction.csv"))
+demo1$FactorA <- as.factor(demo1$FactorA)
+demo1$FactorB <- as.factor(demo1$FactorB)
+demo2$FactorA <- as.factor(demo2$FactorA)
+demo2$FactorB <- as.factor(demo2$FactorB)
+```
+
+## Factorial Designs
+
+
+
+
+Read the csv file `5_BatteryLife.csv` in R. Make sure that in the `data.frame` the variables `ExtPressure` and `ResinBatchNo` are the type of factor. If not sure, apply `as.factor()` on those variables after reading the dataset.
+
+```{r, eval=TRUE, echo=TRUE}
+df1 <- read.csv(file.path("data", "5_BatteryLife.csv"))
+df1$MaterialType <- as.factor(df1$MaterialType)
+df1$Temperature <- as.factor(df1$Temperature)
+```
+
+
+Use boxplots to observe the differences of `LifeTime` among three levels of `MaterialType`, and, three levels of `Temperature`. 
+
+The average `LifeTime` tends to be lower for higher `Temperature`. 
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8}
+# Draw the grouped boxplot
+par(mfrow = c(1, 2))
+boxplot(LifeTime ~ MaterialType, data = df1)
+boxplot(LifeTime ~ Temperature, data = df1)
+```
+```{r, eval=TRUE, echo=FALSE}
+par(mfrow = c(1, 1))
+```
+
+
+The function `aov()` fits the ANOVA model, and the ANOVA table is obtained by calling `summary()`. For Randomized Complete Block Design (RCBD), the R model formula includes two items on its right-hand-side: `ExtPressure + ResinBatchNo`. It's important to note that the order of placing the factor and block effects is somewhat arbitrary for RCBD. However, this order matters if the design is incomplete, as some sums of squares are adjusted accordingly.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit1 <- aov(LifeTime ~ MaterialType * Temperature, data = df1)
+summary(fit1)
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=6}
+interaction.plot(
+  x.factor = df1$Temperature, # x-axis variable
+  trace.factor = df1$MaterialType, # variable for lines
+  response = df1$LifeTime, # y-axis variable
+  ylab = "LifeTime", xlab = "Temperature", 
+  col = c("firebrick", "dodgerblue2", "forestgreen"),
+  lty = 1, lwd = 3, trace.label = "MaterialType"
+)
+```
+
+
+
+The procedure of diagnosing the residual is similar to that for the one-way ANOVA model. Please refer to the handout of R codes in Chapter 3 for more details of interpreting the residual plots.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
+par(mfrow = c(2, 2))
+plot(fit1)
+```
+```{r, eval=TRUE, echo = FALSE}
+par(mfrow = c(1, 1))
+```
+
+
+
+
+
+One additional plot is to draw the scatter plot of the residual against the levels of the block. A lack of any visually obvious pattern in the dots on the plot is desired.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
+plot(
+  as.numeric(df1$MaterialType), fit1$residuals,
+  xlab = "MaterialType", ylab = "residuals"
+)
+plot(
+  as.numeric(df1$Temperature), fit1$residuals,
+  xlab = "Temperature", ylab = "residuals"
+)
+```
+Multiple comparison is performed for the treatment effect. The following codes demonstrate the use of Tukey’s test and Fisher's LSD method. For Tukey’s test, add the input argument `which = "ExtPressure"` to only show the test results of comparing differences among the `ExtPressure` levels. For Fisher's LSD method, specify `trt = "ExtPressure"` as the input argument to the `LSD.test()` function to show the comparison results among the `ExtPressure` levels. For information of interpreting the results, please refer to the handout of R codes in Chapter 3.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+TukeyHSD(fit1, which = c("MaterialType", "Temperature"))
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+if (!("agricolae" %in% rownames(installed.packages()))) {
+  install.packages("agricolae")  
+}
+library(agricolae)
+out <- LSD.test(fit1, trt = c("MaterialType", "Temperature"), p.adj = "bonferroni")
+out$group
+```
+
+
+```{r df1q, eval=TRUE, echo=TRUE}
+df1q <- df1
+df1q$Temperature <- as.numeric(df1q$Temperature) - 2
+contrasts(df1q$MaterialType) <- contr.sum(3)
+ols1 <- lm(LifeTime ~ (Temperature + I(Temperature^2)) * MaterialType + I(Temperature^3), data = df1q)
+anova(ols1)
+summary(ols1)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+summary(ols1)
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE}
+df2 <- read.csv(file.path("data", "5_ToolLife.csv"))
+df2$TotalAngle <- as.factor(df2$TotalAngle)
+df2$CuttingSpeed <- as.factor(df2$CuttingSpeed)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+fit2 <- aov(ToolLife ~ TotalAngle*CuttingSpeed, data = df2)
+summary(fit2)
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE}
+df2q <- read.csv(file.path("data", "5_ToolLife.csv"))
+x1m <- mean(df2q$TotalAngle)
+x2m <- mean(df2q$CuttingSpeed)
+df2q$TotalAngle <- df2q$TotalAngle - x1m
+df2q$CuttingSpeed <- df2q$CuttingSpeed - x2m 
+#df2q$TotalAngle <- 2*(df2q$TotalAngle - min(df2q$TotalAngle))/diff(range(df2q$TotalAngle)) - 1
+#df2q$CuttingSpeed <- 2*(df2q$CuttingSpeed - min(df2q$CuttingSpeed))/diff(range(df2q$CuttingSpeed)) - 1
+ols2 <- lm(ToolLife ~ TotalAngle*CuttingSpeed + I(TotalAngle^2) + I(CuttingSpeed^2), data = df2q)
+summary(ols2)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+ols2_full <- lm(ToolLife ~ (TotalAngle + I(TotalAngle^2))*(CuttingSpeed + I(CuttingSpeed^2)), data = df2q)
+summary(ols2_full)
+```
+
+```{r ols2_full_contour, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=6}
+x1_grid <- seq(min(df2q$TotalAngle), max(df2q$TotalAngle), length = 100)
+x2_grid <- seq(min(df2q$CuttingSpeed), max(df2q$CuttingSpeed), length = 100)
+newx <- data.frame(
+  TotalAngle = rep(x1_grid, each = 100),
+  CuttingSpeed = rep(x2_grid, time = 100)
+)
+rs <- predict(ols2_full, newx)
+
+rsplot_data <- data.frame(newx, rs = rs)
+rsplot_data$TotalAngle <- rsplot_data$TotalAngle + x1m
+rsplot_data$CuttingSpeed <- rsplot_data$CuttingSpeed + x2m
+
+library(ggplot2)
+#- Add color to the contour plot
+ggplot(rsplot_data) +
+  geom_contour(aes(TotalAngle, CuttingSpeed, z = rs), colour = "white") +
+  geom_contour_filled(aes(TotalAngle, CuttingSpeed, z = rs))  
+
+```
+
+
+```{r ols2_full_plotly, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
+library(plotly)
+rsplot_matrix <- matrix(rsplot_data$rs, 100, 100)
+p <- plot_ly(z = rsplot_matrix, type = "surface") %>%
+  layout(scene = list(
+      xaxis = list(
+        title = 'TotalAngle',
+        ticktext = lapply(seq(0, 100, 20), function(i) diff(range(rsplot_data$TotalAngle))*i/100 + min(rsplot_data$TotalAngle)), 
+        tickvals = list(0, 20, 40, 60, 80, 100),
+        tickmode = "array"
+      ),
+      yaxis = list(
+        title = 'CuttingSpeed',
+        ticktext = lapply(seq(0, 100, 20), function(i) diff(range(rsplot_data$CuttingSpeed))*i/100 + min(rsplot_data$CuttingSpeed)), 
+        tickvals = list(0, 20, 40, 60, 80, 100),
+        tickmode = "array"        
+      ),
+      zaxis = list(title = 'hat(ToolLife)')))
+
+htmlwidgets::saveWidget(as_widget(p), "plotly_rsm_ch5.html")
+
+```
+
+
+
+
+```{r, eval=TRUE, echo=TRUE}
+df3 <- read.csv(file.path("data", "5_Impurity.csv"))
+df3$Temperature <- as.factor(df3$Temperature)
+df3$Pressure <- as.factor(df3$Pressure)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit3 <- aov(Impurity ~ Temperature * Pressure, data = df3)
+summary(fit3)
+```
+
+
+
+
+
+
+
+```{r, eval=TRUE, echo=TRUE}
+df4 <- read.csv(file.path("data", "5_SoftDrinkBottling.csv"))
+df4$Carbonation <- as.factor(df4$Carbonation)
+df4$Pressure <- as.factor(df4$Pressure)
+df4$LineSpeed <- as.factor(df4$LineSpeed)
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit4 <- aov(FillHeightsDev ~ Carbonation * Pressure * LineSpeed, data = df4)
+summary(fit4)
+```
+
+
+
+ 
