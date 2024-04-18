@@ -391,6 +391,30 @@ interaction.plot(
 df9 <- read.csv(file.path("data", "6_Sidewall.csv"))
 ```
 
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit9 <- aov(AvgDefectNum ~ factor(Temperature) + factor(ResinFlow), data = df9)
+summary(fit9)
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=6}
+par(mfrow = c(2, 2))
+plot(fit9)
+par(mfrow = c(1, 1))
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
+plot(
+  as.numeric(df9$ClampTime), fit9$residuals, pch = 16,
+  xlab = "ClampTime", ylab = "residuals", xlim = c(-2, 2)
+)
+abline(h = 0, lty = 3)
+```
+
+
+
+
 ```{r, eval=TRUE, echo=TRUE}
 df10 <- read.csv(file.path("data", "6_Wafer.csv"))
 ```
