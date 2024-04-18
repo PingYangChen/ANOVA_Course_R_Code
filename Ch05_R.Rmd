@@ -1,7 +1,7 @@
 ---
-title: "Ch-05 R Codes"
+title: "Ch-05 & 06 R Codes"
 author: "Ping-Yang Chen"
-date: "2024-03-xx"
+date: "2024-04-xx"
 output: pdf_document
 ---
 
@@ -241,4 +241,163 @@ summary(fit4)
 
 
 
+# Chapter 6
  
+```{r, eval=TRUE, echo=TRUE}
+df5 <- read.csv(file.path("data", "6_ChemicalRecovery.csv"))
+```
+ 
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+# Effect of factor A (reactant concentration)
+mean(df5$Recovery[df5$ReactConc == 1] - df5$Recovery[df5$ReactConc == -1])
+# Effect of factor A (catalyst amount)
+mean(df5$Recovery[df5$CataAmo == 1] - df5$Recovery[df5$CataAmo == -1])
+# Effect of two-factor interaction AB
+twofi <- as.numeric(df5$ReactConc)*df5$CataAmo
+mean(df5$Recovery[twofi == 1] - df5$Recovery[twofi == -1])
+```
+```{r, eval=TRUE, echo=FALSE, fig.align='center', fig.width=4}
+# Effect of factor A (reactant concentration)
+cat(sprintf("Effect of factor A (reactant concentration): %.4f\n\n", 
+  mean(df5$Recovery[df5$ReactConc == 1] - df5$Recovery[df5$ReactConc == -1])
+))
+# Effect of factor A (catalyst amount)
+cat(sprintf("Effect of factor A (catalyst amount): %.4f\n\n", 
+  mean(df5$Recovery[df5$CataAmo == 1] - df5$Recovery[df5$CataAmo == -1])
+))
+# Effect of two-factor interaction AB
+twofi <- as.numeric(df5$ReactConc)*df5$CataAmo
+cat(sprintf("Effect of two-factor interaction AB: %.4f\n\n", 
+  mean(df5$Recovery[twofi == 1] - df5$Recovery[twofi == -1])
+))
+```
+
+
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit5 <- aov(Recovery ~ factor(ReactConc)*factor(CataAmo), data = df5)
+summary(fit5)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=6}
+interaction.plot(
+  x.factor = df5$ReactConc, # x-axis variable
+  trace.factor = df5$CataAmo, # variable for lines
+  response = df5$Recovery, # y-axis variable
+  ylab = "Recovery", xlab = "Reactant Concentration", 
+  col = c("firebrick", "dodgerblue2"),
+  lty = 1, lwd = 3, trace.label = "Catalyst\nAmount"
+)
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE}
+df6 <- read.csv(file.path("data", "6_PlasmaEtching_2^3.csv"))
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit6 <- aov(EachRate ~ factor(Gap) * factor(GasFlow) * factor(Power), data = df6)
+summary(fit6)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+ols6_full <- lm(EachRate ~ Gap * GasFlow * Power, data = df6)
+summary(ols6_full)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+ols6_reduced <- lm(EachRate ~ Gap * Power, data = df6)
+summary(ols6_reduced)
+```
+
+
+```{r, eval=TRUE, echo=TRUE}
+df7 <- read.csv(file.path("data", "6_PilotPlant.csv"))
+df7$Temperature <- as.factor(df7$Temperature)
+df7$Pressure <- as.factor(df7$Pressure)
+df7$FormaldehydeConc <- as.factor(df7$FormaldehydeConc)
+df7$StirringRate <- as.factor(df7$StirringRate)
+```
+
+
+```{r halfqqnorm, eval=TRUE, echo=TRUE}
+# Half Normal Plot
+halfqqnorm <- function(input, tol = 0.5) {
+	#input <- eff641
+	y <- sort(abs(input))
+	nq <- qnorm(seq(0.5, 0.99, length = length(y)))
+	plot(y, nq, yaxt = "n", pch = 15, xlab = "|Effects|", ylab = "Half Normal Probability")
+	title("Half Normal Plot")
+	s <- min(which(diff(y)/diff(range(y)) > 1/(length(y)-1)))
+	abline(a = -y[1]*(nq[s]-nq[1])/(y[s]-y[1]), b = (nq[s]-nq[1])/(y[s]-y[1]))
+	axis(2, at = qnorm(seq(0.5, 0.9999, length = 5)), labels = round(seq(0, 1, length = 5),2))
+	loc <- sqrt((nq - (y - y[1])*(nq[s]-nq[1])/(y[s]-y[1]))^2) > tol
+	if (is.null(names(y))) {
+		text(y[loc], nq[loc], order(abs(input))[loc], pos = 2)
+	} else {
+		text(y[loc], nq[loc], names(abs(input))[order(abs(input))[loc]], pos = 2)
+	}
+}
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit7 <- aov(FiltrationRate ~ Temperature * Pressure * FormaldehydeConc * StirringRate, data = df7)
+summary(fit7)
+```
+
+
+
+
+```{r, eval=TRUE, echo=TRUE}
+df8 <- read.csv(file.path("data", "6_Drilling.csv"))
+```
+
+
+
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+fit8 <- aov(AdvRate ~ factor(FlowRate) * (factor(RotatSp) + factor(MudType)), data = df8)
+summary(fit8)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
+interaction.plot(
+  x.factor = df8$FlowRate, # x-axis variable
+  trace.factor = df8$RotatSp, # variable for lines
+  response = df8$AdvRate, # y-axis variable
+  ylab = "AdvRate", xlab = "FlowRate", 
+  col = c("firebrick", "dodgerblue2"),
+  lty = 1, lwd = 3, trace.label = "RotatSp"
+)
+
+interaction.plot(
+  x.factor = df8$FlowRate, # x-axis variable
+  trace.factor = df8$MudType, # variable for lines
+  response = df8$AdvRate, # y-axis variable
+  ylab = "AdvRate", xlab = "FlowRate", 
+  col = c("firebrick", "dodgerblue2"),
+  lty = 1, lwd = 3, trace.label = "MudType"
+)
+```
+
+
+```{r, eval=TRUE, echo=TRUE}
+df9 <- read.csv(file.path("data", "6_Sidewall.csv"))
+```
+
+```{r, eval=TRUE, echo=TRUE}
+df10 <- read.csv(file.path("data", "6_Wafer.csv"))
+```
+
+```{r, eval=TRUE, echo=TRUE}
+df11 <- read.csv(file.path("data", "6_CreditCardMarketing.csv"))
+```
+
+
+
