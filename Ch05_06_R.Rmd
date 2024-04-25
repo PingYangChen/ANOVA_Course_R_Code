@@ -1,7 +1,7 @@
 ---
 title: "Ch-05 & 06 R Codes"
 author: "Ping-Yang Chen"
-date: "2024-04-xx"
+date: "2024-04-26"
 output: pdf_document
 ---
 
@@ -743,12 +743,11 @@ df11 <- read.csv(file.path("data", "6_CreditCardMarketing.csv"))
 
 Recall the Resin Plant Experiment. Read the csv file `6_PilotPlant.csv` in R.
 
-```{r, eval=TRUE, echo=TRUE}
+```{r df7a, eval=TRUE, echo=TRUE}
 df7 <- read.csv(file.path("data", "6_PilotPlant.csv"))
 ```
 
-
-```{r, eval=TRUE, echo=TRUE}
+```{r df7c, eval=TRUE, echo=TRUE}
 df7_C <- data.frame(
   Temperature = rep(0, 4),
   Pressure = rep(0, 4),
@@ -794,5 +793,32 @@ print(data.frame(
 ```
 
 
+<!--
+
+Demo in class
+```{r, eval=TRUE, echo=TRUE}
+df7 <- read.csv(file.path("data", "6_PilotPlant.csv"))
+df7_C <- data.frame(
+  Temperature = rep(0, 4),
+  Pressure = rep(0, 4),
+  CH2OConc = rep(0, 4),
+  StirRate = rep(0, 4),
+  FiltrationRate = c(73, 75, 66, 69)
+)
+```
 
 
+```{r, eval=TRUE, echo=TRUE}
+fit7 <- aov(FiltrationRate ~ factor(Temperature) * factor(Pressure) * factor(CH2OConc) * factor(StirRate), data = df7)
+summary(fit7)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+df7A <- rbind(df7, df7_C)
+fit7A <- aov(
+  FiltrationRate ~ factor(Temperature)*factor(Pressure)*factor(CH2OConc)*factor(StirRate), 
+  data = df7A
+)
+summary(fit7A)
+```
+-->
