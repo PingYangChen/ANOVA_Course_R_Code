@@ -34,12 +34,12 @@ designMat <- data.frame(
 	E = rep(rep(0:1, each = 16), 2),
 	F = rep(0:1, each = 32)
 )
-print(head(designMat, 6))
+#print(head(designMat, 6))
 
 letterMat <- sapply(1:ncol(designMat), function(j) {
   ifelse(designMat[,j] == 1, letters[j], "")  
 })
-print(head(letterMat, 6))
+#print(head(letterMat, 6))
 
 effectNames <- sapply(1:nrow(letterMat), function(i) {
   ifelse(all(letterMat[i,] == ""), "(1) ", paste0(letterMat[i,], collapse = ""))
@@ -47,6 +47,8 @@ effectNames <- sapply(1:nrow(letterMat), function(i) {
 rownames(designMat) <- effectNames
 print(head(designMat, 6))
 ```
+
+Compute the linear combinations $L_1(i)$, $L_2(i)$ and $L_3(i)$, and take (mod 2) for each of them, $i = 1, 2,..., 64$.
 
 ```{r r721-1, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
 attach(designMat)
@@ -58,12 +60,12 @@ assignBlock <- data.frame(
 detach(designMat)
 ```
 
+Get the block IDs for each run.
 ```{r r721-2, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
 blockId <- as.matrix(assignBlock) %*% c(2^2, 2, 1) + 1
 ```
 
-
-
+Present the runs in each block.
 ```{r r721-3, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
 result <- matrix("", 8, 8)
 for (i in 1:8) {
@@ -72,8 +74,8 @@ for (i in 1:8) {
 colnames(result) <- sprintf("Block %d", 1:8)
 print(data.frame(result))
 ```
-The other effects confounded with blocks:
 
+The other effects confounded with blocks:
 
 \begin{align*}
 (ABCD)(ACE) & = A^2 B C^2 D E = BDE \\
@@ -136,18 +138,15 @@ $$I = ACE = BDE = ABCD$$
 All aliases are
 
 \begin{align*}
-A & = CE = BCD \\
-B & = DE = ACD \\ 
-C & = AE = ABD \\
-D & = BE = ABC \\
-E & = AC \\
-AB & = CD \\
-AD & = BC \\
-AC & = BD \\
+A = CE = BCD & AB = CD \\
+B = DE = ACD & AD = BC \\
+C = AE = ABD & AC = BD \\
+D = BE = ABC & \\
+E = AC & \\
 \end{align*}
 
 
-
+Add column of the response variable.
 ```{r r811-2, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
 y <- numeric(8)
 y[effectNames == "e"]     <- 23.2
