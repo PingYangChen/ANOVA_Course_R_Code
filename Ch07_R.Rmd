@@ -1,0 +1,217 @@
+---
+title: "Ch-07_08 R Codes"
+author: "Ping-Yang Chen"
+date: "2024-05-26"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Edition. John Wiley & Sons.
+
+Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
+
+# 7.21
+
+By the defining contrast, to confound eight blocks with $ABCD$, $ACE$ and $ABEF$, let
+
+\begin{align*}
+L_1 & = x_1 + x_2 + x_3 + x_4 \\
+L_2 & = x_1 + x_3 + x_5 \\
+L_3 & = x_1 + x_2 + x_5 + x_6 \\
+\end{align*}
+
+
+
+```{r r721, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+designMat <- data.frame(
+	A = rep(0:1, 32),
+	B = rep(rep(0:1, each = 2), 16),
+	C = rep(rep(0:1, each = 4), 8),
+	D = rep(rep(0:1, each = 8), 4),
+	E = rep(rep(0:1, each = 16), 2),
+	F = rep(0:1, each = 32)
+)
+print(head(designMat, 6))
+
+letterMat <- sapply(1:ncol(designMat), function(j) {
+  ifelse(designMat[,j] == 1, letters[j], "")  
+})
+print(head(letterMat, 6))
+
+effectNames <- sapply(1:nrow(letterMat), function(i) {
+  ifelse(all(letterMat[i,] == ""), "(1) ", paste0(letterMat[i,], collapse = ""))
+})
+rownames(designMat) <- effectNames
+print(head(designMat, 6))
+```
+
+```{r r721-1, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+attach(designMat)
+assignBlock <- data.frame(
+	L1 = (A + B + C + D) %% 2,
+	L2 = (A + C + E) %% 2,
+	L3 = (A + B + E + F) %% 2
+)
+detach(designMat)
+```
+
+```{r r721-2, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+blockId <- as.matrix(assignBlock) %*% c(2^2, 2, 1) + 1
+```
+
+
+
+```{r r721-3, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+result <- matrix("", 8, 8)
+for (i in 1:8) {
+  result[,i] <- effectNames[which(blockId == i)]
+}
+colnames(result) <- sprintf("Block %d", 1:8)
+print(data.frame(result))
+```
+The other effects confounded with blocks:
+
+
+\begin{align*}
+(ABCD)(ACE) & = A^2 B C^2 D E = BDE \\
+(ABCD)(ABEF) & = A^2 B^2 C D E F = CDEF \\
+(ACE)(ABEF) & = A^2 B C E^2 F = BCF \\
+(ABCD)(BCF) & = A B^2 C^2 D F = ADF 
+\end{align*}
+
+
+# 8.11
+
+$2^{5-2}$ fractional factorial design with defining relation $$I = ACE \text{ and } I = BDE$$
+
+1. generate the $2^3$ full factorial design
+
+```{r r811, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+lvl <- c(-1, 1)
+FF3 <- data.frame(
+	A = rep(lvl, 4),
+	B = rep(rep(lvl, each = 2), 2),
+	C = rep(lvl, each = 4)
+)
+print(FF3)
+```
+
+
+2. add two columns $D$ and $E$ to form the $2^{5-2}$ by the defining relation 
+
+\begin{align*}
+I = ACE & \implies E = AC \\
+I = BDE & \implies D = BE \implies D = BAC \\
+\end{align*}
+
+```{r r811-1, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+attach(FF3)
+augmentFrF <- data.frame(
+	D = A * B * C,
+	E = A * C
+)
+detach(FF3)
+
+FrF5_2 <- cbind(FF3, augmentFrF)
+# Get letters of each effect
+letterMat <- sapply(1:ncol(FrF5_2), function(j) {
+  ifelse(FrF5_2[,j] == 1, letters[j], "")  
+})
+# Combine letters 
+effectNames <- sapply(1:nrow(letterMat), function(i) {
+  ifelse(all(letterMat[i,] == ""), "(1) ", paste0(letterMat[i,], collapse = ""))
+})
+rownames(FrF5_2) <- effectNames
+print(FrF5_2)
+```
+
+
+Complete defining relation is
+
+$$I = ACE = BDE = ABCD$$
+
+All aliases are
+
+\begin{align*}
+A & = CE = BCD \\
+B & = DE = ACD \\ 
+C & = AE = ABD \\
+D & = BE = ABC \\
+E & = AC \\
+AB & = CD \\
+AD & = BC \\
+AC & = BD \\
+\end{align*}
+
+
+
+```{r r811-2, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+y <- numeric(8)
+y[effectNames == "e"]     <- 23.2
+y[effectNames == "ad"]    <- 16.9
+y[effectNames == "cd"]    <- 23.8
+y[effectNames == "bde"]   <- 16.8
+y[effectNames == "ab"]    <- 15.5
+y[effectNames == "bc"]    <- 16.2
+y[effectNames == "ace"]   <- 23.4
+y[effectNames == "abcde"] <- 18.1
+frfData <- cbind(FrF5_2, y = y)
+```
+
+The estimation of factor effects are:
+```{r r811-3, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+# Compute the model matrix of all effect terms without intercept
+mmat5 <- model.matrix( ~ A+B+C+D+E+A:B+A:D - 1, data = frfData)
+# Calculate the effect sizes using the +/- signs of the model matrix
+eff5 <- numeric(ncol(mmat5))
+for (i in 1:ncol(mmat5)) {
+  eff5[i] <- 2*mean(frfData$y*mmat5[,i])
+}
+names(eff5) <- colnames(mmat5)
+```
+
+```{r, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
+print(data.frame(
+  Factor = names(eff5),
+  "Est.Effect" = as.vector(eff5)
+))
+```
+
+
+```{r halfqqnorm, eval=TRUE, echo=TRUE}
+# Half Normal Plot
+halfqqnorm <- function(input, tol = 0.5) {
+	y <- sort(abs(input))
+	nq <- qnorm(seq(0.5, 0.99, length = length(y)))
+	plot(y, nq, yaxt = "n", pch = 15, 
+	     xlab = "|Effects|", ylab = "Half Normal Probability")
+	title("Half Normal Plot")
+	# choose anchor point to draw a straight line
+	s <- min(which(diff(y)/diff(range(y)) > 1/(length(y)-1)))
+	abline(a = -y[1]*(nq[s]-nq[1])/(y[s]-y[1]), b = (nq[s]-nq[1])/(y[s]-y[1]))
+	axis(2, at = qnorm(seq(0.5, 0.9999, length = 5)), 
+	     labels = round(seq(0, 1, length = 5),2))
+	loc <- sqrt((nq - (y - y[1])*(nq[s]-nq[1])/(y[s]-y[1]))^2) > tol
+	if (is.null(names(y))) {
+		text(y[loc], nq[loc], order(abs(input))[loc], pos = 2)
+	} else {
+		text(y[loc], nq[loc], names(abs(input))[order(abs(input))[loc]], pos = 2)
+	}
+}
+```
+
+
+
+
+```{r h5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+halfqqnorm(eff5)
+```
+
+
+```{r r811-4, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fit2 <- aov(y ~ B, data = frfData)
+summary(fit2)
+```

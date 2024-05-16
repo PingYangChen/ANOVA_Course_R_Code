@@ -1,0 +1,99 @@
+---
+title: "Random Effect Model"
+author: "Ping-Yang Chen"
+date: "2024-05-17"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Edition. John Wiley & Sons.
+
+Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
+
+
+# One Factor Case
+
+```{r df1, eval=TRUE, echo=TRUE}
+fabricStr <- data.frame(
+  loom     = as.factor(rep(1:4, each = 4)),
+  n        = as.factor(rep(1:4, time = 4)),
+  strength = c(98, 97, 99, 96, 91, 90, 93, 92,
+               96, 95, 97, 95, 95, 96, 99, 98)
+)
+```
+
+```{r fit1, eval=TRUE, echo=TRUE}
+fit1 <- aov(strength ~ loom, data = fabricStr)
+summary(fit1)
+```
+
+```{r rfit1, eval=TRUE, echo=TRUE}
+library(lme4)
+rfit1 <- lmer(strength ~ 1 + (1 | loom), data = fabricStr)
+summary(rfit1)
+confint(rfit1, oldNames = FALSE)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+summary(rfit1)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+confint(rfit1, oldNames = FALSE)
+```
+
+
+# Gauge R&R
+
+```{r df2, eval=TRUE, echo=TRUE}
+grrData <- data.frame(
+  part     = as.factor(rep(1:20, each = 3*2)),
+  operator = as.factor(rep(rep(1:3, each = 2), time = 20)),
+  n        = as.factor(rep(1:2, time = 3*20)),
+  measure  = c(21, 20, 20, 20, 19, 21, 24, 23, 24, 24, 23, 24,
+               20, 21, 19, 21, 20, 22, 27, 27 ,28, 26, 27, 28,
+               19, 18, 19, 18, 18, 21, 23, 21, 24, 21, 23, 22,
+               22, 21, 22, 24, 22, 20, 19, 17, 18, 20, 19, 18,
+               24, 23, 25, 23, 24, 24, 25, 23, 26, 25, 24, 25,
+               21, 20, 20, 20, 21, 20, 18, 19, 17, 19, 18, 19,
+               23, 25, 25, 25, 25, 25, 24, 24, 23, 25, 24, 25,
+               29, 30, 30, 28, 31, 30, 26, 26, 25, 26, 25, 27,
+               20, 20, 19, 20, 20, 20, 19, 21, 19, 19, 21, 23,
+               25, 26, 25, 24, 25, 25, 19, 19, 18, 17, 19, 17)
+)
+```
+
+
+```{r fit2, eval=TRUE, echo=TRUE}
+fit2 <- aov(measure ~ part*operator, data = grrData)
+summary(fit2)
+```
+
+```{r rfit2, eval=TRUE, echo=TRUE}
+rfit2 <- lmer(measure ~ 1 + (1 | part) + (1 | operator) + (1 | part:operator), data = grrData)
+```
+
+
+```{r, eval=TRUE, echo=TRUE}
+summary(rfit2)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+confint(rfit2, oldNames = FALSE)
+```
+
+
+
+```{r rfit2r, eval=TRUE, echo=TRUE}
+# Fit Reduced Model
+rfit2_reduced <- lmer(
+  measure ~ (1 | part) + (1 | operator), data = grrData
+)
+summary(rfit2_reduced)
+confint(rfit2_reduced , oldNames = FALSE)
+```
+
+
