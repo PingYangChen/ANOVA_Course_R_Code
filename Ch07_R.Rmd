@@ -51,6 +51,7 @@ print(head(designMat, 6))
 Compute the linear combinations $L_1(i)$, $L_2(i)$ and $L_3(i)$, and take (mod 2) for each of them, $i = 1, 2,..., 64$.
 
 ```{r r721-1, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+
 attach(designMat)
 assignBlock <- data.frame(
 	L1 = (A + B + C + D) %% 2,
@@ -138,11 +139,14 @@ $$I = ACE = BDE = ABCD$$
 All aliases are
 
 \begin{align*}
-A = CE = BCD & AB = CD \\
-B = DE = ACD & AD = BC \\
-C = AE = ABD & AC = BD \\
-D = BE = ABC & \\
-E = AC & \\
+A & = CE = BCD  \\
+B & = DE = ACD \\ 
+C & = AE = ABD \\
+D & = BE = ABC \\
+E & = AC \\
+AB & = CD \\
+AD & = BC \\
+AC & = BD \\
 \end{align*}
 
 
@@ -160,10 +164,10 @@ y[effectNames == "abcde"] <- 18.1
 frfData <- cbind(FrF5_2, y = y)
 ```
 
-The estimation of factor effects are:
+The estimation of main effects are:
 ```{r r811-3, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
 # Compute the model matrix of all effect terms without intercept
-mmat5 <- model.matrix( ~ A+B+C+D+E+A:B+A:D - 1, data = frfData)
+mmat5 <- model.matrix( ~ A+B+C+D+E - 1, data = frfData)
 # Calculate the effect sizes using the +/- signs of the model matrix
 eff5 <- numeric(ncol(mmat5))
 for (i in 1:ncol(mmat5)) {
@@ -204,13 +208,46 @@ halfqqnorm <- function(input, tol = 0.5) {
 
 
 
+(d) Project the $2^{5-2}$ design to only considering factors $A$, $B$ and $D$. The estimation of the effects are:
+```{r r811-4, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+# Compute the model matrix of all effect terms without intercept
+mmat_proj <- model.matrix( ~ A*B*D - 1, data = frfData)
+# Calculate the effect sizes using the +/- signs of the model matrix
+eff_proj <- numeric(ncol(mmat_proj))
+for (i in 1:ncol(mmat_proj)) {
+  eff_proj[i] <- 2*mean(frfData$y*mmat_proj[,i])
+}
+names(eff_proj) <- colnames(mmat_proj)
+```
+
+```{r, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
+print(data.frame(
+  Factor = names(eff_proj),
+  "Est.Effect" = as.vector(eff_proj)
+))
+```
 
 ```{r h5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
-halfqqnorm(eff5)
+halfqqnorm(eff_proj)
 ```
 
 
-```{r r811-4, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
-fit2 <- aov(y ~ B, data = frfData)
-summary(fit2)
+
+```{r r811-5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fitProj <- aov(y ~ A+B+D+B:D+A:B:D, data = frfData)
+summary(fitProj)
 ```
+
+
+```{r r811-5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fitProj <- aov(y ~ A+B+C+D+E+A:B+A:D, data = frfData)
+summary(fitProj)
+```
+
+
+```{r r811-5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fitProj <- aov(y ~ A:B+A:D, data = frfData)
+summary(fitProj)
+```
+
+
