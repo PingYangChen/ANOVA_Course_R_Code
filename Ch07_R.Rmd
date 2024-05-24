@@ -138,17 +138,15 @@ $$I = ACE = BDE = ABCD$$
 
 All aliases are
 
-\begin{align*}
-A & = CE = BCD  \\
-B & = DE = ACD \\ 
-C & = AE = ABD \\
-D & = BE = ABC \\
-E & = AC \\
-AB & = CD \\
-AD & = BC \\
-AC & = BD \\
-\end{align*}
-
+$$
+\begin{array}{ll}
+A = CE = BCD & AB = CD \\
+B = DE = ACD & AD = BC \\ 
+C = AE = ABD & AC = BD \\
+D = BE = ABC & \\
+E = AC = BD  & \\
+\end{array}
+$$
 
 Add column of the response variable.
 ```{r r811-2, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
@@ -208,46 +206,35 @@ halfqqnorm <- function(input, tol = 0.5) {
 
 
 
-(d) Project the $2^{5-2}$ design to only considering factors $A$, $B$ and $D$. The estimation of the effects are:
+(d) From part (b), we have $AB$ and $AD$ are aliased with other effects. Suppose $CD$ and $BC$ are negligible, we can try include $AB$ and $AD$ solely into the main effect model. First, the estimated effects are
+
 ```{r r811-4, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
 # Compute the model matrix of all effect terms without intercept
-mmat_proj <- model.matrix( ~ A*B*D - 1, data = frfData)
+mmat_add2fi <- model.matrix( ~ A + B + C + D + E + A:B + A:D - 1, data = frfData)
 # Calculate the effect sizes using the +/- signs of the model matrix
-eff_proj <- numeric(ncol(mmat_proj))
-for (i in 1:ncol(mmat_proj)) {
-  eff_proj[i] <- 2*mean(frfData$y*mmat_proj[,i])
+eff_add2fi <- numeric(ncol(mmat_add2fi))
+for (i in 1:ncol(mmat_add2fi)) {
+  eff_add2fi[i] <- 2*mean(frfData$y*mmat_add2fi[,i])
 }
-names(eff_proj) <- colnames(mmat_proj)
+names(eff_add2fi) <- colnames(mmat_add2fi)
 ```
 
 ```{r, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
 print(data.frame(
-  Factor = names(eff_proj),
-  "Est.Effect" = as.vector(eff_proj)
+  Factor = names(eff_add2fi),
+  "Est.Effect" = as.vector(eff_add2fi)
 ))
 ```
 
+The half normal plot shows that only the effect of $B$ is large indicating that $AB$ and $AD$ could be pooled as an estimate of error.
+
 ```{r h5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
-halfqqnorm(eff_proj)
+halfqqnorm(eff_add2fi)
 ```
 
 
-
-```{r r811-5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
-fitProj <- aov(y ~ A+B+D+B:D+A:B:D, data = frfData)
-summary(fitProj)
+The final ANOVA result is
+```{r r811-5, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
+fit <- aov(y ~ A + B + C + D + E, data = frfData)
+summary(fit)
 ```
-
-
-```{r r811-5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
-fitProj <- aov(y ~ A+B+C+D+E+A:B+A:D, data = frfData)
-summary(fitProj)
-```
-
-
-```{r r811-5, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
-fitProj <- aov(y ~ A:B+A:D, data = frfData)
-summary(fitProj)
-```
-
-
