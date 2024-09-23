@@ -131,6 +131,8 @@ The most important parts of the outputs are shown below:
 - `$groups` indicates the significance of the difference in the etching rate at each level of power. The column groups in `$groups` encodes the treatment levels with no significant difference in the etching rate by the same alphabet letter.
 
 
+<!--
+
 \newpage
 ## Simluate for Observing Robustness of ANOVA
 
@@ -348,3 +350,4 @@ print(sim_t2e_ncv)
 ```
 The simulated type II error is `r sim_t2e_ncv` when the variance is not constant, which much more than the type II error in the case of Normal assumption.
 
+-->
