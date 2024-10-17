@@ -40,6 +40,17 @@ The function `aov()` fits the ANOVA model. For one-way ANOVA, the command is as 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
 fit <- aov(EtchRate ~ Power, data = df1)
 summary(fit)
+names(fit)
+sum(fit$residuals^2)/(nrow(df1) - length(unique(df1$Power)))
+sum(fit$residuals^2)/fit$df.residual
+
+
+summary(fit)[[1]][2,3]
+
+typeof(summary(fit))
+
+shapiro.test(fit$residuas)
+
 ```
 
 
