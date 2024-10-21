@@ -1,7 +1,7 @@
 ---
 title: "Ch-03 R Codes"
 author: "Ping-Yang Chen"
-date: "2024-03-15"
+#date: "2024-03-15"
 output: pdf_document
 ---
 
@@ -64,9 +64,11 @@ The second (upper right) plot is the residuals' Normal Quantile-Quantile (QQ) pl
 
 The remaining two plots at the bottom are standardized residuals against the fitted values and standardized residuals against the factor levels, respectively. They are also used to check the consistency of the variance.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
-par(mfrow = c(2, 2))
-plot(fit)
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+par(mfrow = c(1, 2))
+plot(fit, which = 1:2)
+```
+```{r, eval=TRUE, echo=FALSE}
 par(mfrow = c(1, 1))
 ```
 
@@ -141,6 +143,130 @@ The most important parts of the outputs are shown below:
 - `$means` displays the estimated mean of the etching rate at each level of power.
 - `$groups` indicates the significance of the difference in the etching rate at each level of power. The column groups in `$groups` encodes the treatment levels with no significant difference in the etching rate by the same alphabet letter.
 
+
+
+## Variance-Stabilizing Transformations: Peak Discharge Experiments
+
+Read the csv file `3_PeakDischarge.csv` in R. Make sure that in the `data.frame` the variable `Method` is a factor because it represents categorical data (i.e., different methods). If not sure, apply `as.factor()` function to set the property of the variable `Method` after reading the dataset.
+
+```{r, eval=TRUE, echo=TRUE, warning=FALSE}
+# Load the dataset from the 'data' directory
+df2 <- read.csv(file.path("data", "3_PeakDischarge.csv"))
+# Convert 'Method' column to a factor variable since it's categorical
+df2$Method <- as.factor(df2$Method)
+```
+
+Boxplot provides an initial insight into whether the variance across groups looks consistent and whether there might be any outliers. 
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
+# Boxplot to visualize the distribution of 'PeakDischarge' for each 'Method'
+boxplot(PeakDischarge ~ Method, data = df2)
+```
+
+In the boxplot of the PeakDischarge data, we observe that the data variation for Methods 3 and 4 appears greater than that for Methods 1 and 2. To confirm whether the variances across the different 'Method' groups are statistically equal, we can perform modified Levene's test for homogeneity of variance. R users can implement the modified Levene's test by installing the package **asbio**. R codes are shown below.
+
+```{r, warning=FALSE, message=FALSE}
+# Install the asbio package
+# install.packages("asbio")
+# Load the asbio package, which includes the modified Levene's test 
+# for homogeneity of variance
+library(asbio)
+# Perform Levene's test for homogeneity of variance
+# It checks if the variances across the different 'Method' groups are equal
+modlevene.test(df2$PeakDischarge, df2$Method)
+```
+```{r mopdlevtest, echo=FALSE, warning=FALSE, message=FALSE}
+mlout <- modlevene.test(df2$PeakDischarge, df2$Method)
+```
+
+The p-value of the modified Levene's test is `r round(mlout[[5]][1], 4)`, which is lower than the pre-specified significance level of 0.05, indicating that the variances across the different 'Method' groups are significantly different.
+
+
+Now, suppose we did not perform the modified Levene's test and directly fit an one-way ANOVA instead.
+```{r df2aov, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+# Perform a one-way ANOVA to test if there is a significant difference 
+# in 'PeakDischarge' across methods
+fit2 <- aov(PeakDischarge ~ Method, data = df2)
+# Summary of the ANOVA results, including F-statistic and p-value
+summary(fit2)
+```
+
+The p-value of the F-test in the ANOVA table is extremely small, providing significant evidence that the mean Peak Discharge differs across the Methods. **But is this conclusion valid?**
+
+If we examine the residual plots, particularly the scatter of fitted values versus residuals, we notice an increasing trend in the variation of residuals across the Method groups. This suggests that the assumption of constant variance in the ANOVA model may be violated.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+# Diagnostic plots for the ANOVA model: Residuals and Q-Q plot
+par(mfrow = c(1, 2))
+plot(fit2, which = 1:2)
+```
+```{r, eval=TRUE, echo=FALSE}
+par(mfrow = c(1, 1))
+```
+Referring back to Section 3.4.3, to address the issue of unequal variances among groups, a common approach is to apply the Box-Cox transformation. This technique helps stabilize variances and make the data more normally distributed, aligning with the assumptions of ANOVA. The transformation identifies an optimal parameter, $\lambda$ (lambda), which suggests the most suitable transformation. The value of $\lambda$ will guide the appropriate transformation to apply, as outlined in Table 3.9 of the textbook, shown below.
+
+![](image/ch03_boxcox.png)
+
+
+For R users, there are various ways to implement the Box-Cox transformation. Here, we demostrate the use of the `boxcox` function in the **MASS** package. 
+
+```{r, eval=TRUE, echo=TRUE, warning=FALSE, message=FALSE, fig.align='center', fig.width=4, fig.height=4}
+# Load the MASS package to apply the Box-Cox transformation
+library(MASS)
+# Apply the Box-Cox transformation to the ANOVA model to stabilize the variance
+fit2bc <- boxcox(fit2, plotit = TRUE)
+```
+The Box-Cox plot is to visually identify the best transformation (optimal $\lambda$) to apply to the data, which will help meet the assumptions of normality and homogeneity of variance in ANOVA model. The x-axis shows different possible values of $\lambda$, typically ranging from -2 to 2, depending on the data. The y-axis represents the log-likelihood of the data under different transformations. The goal is to find the value of $\lambda$ that maximizes the log-likelihood, indicating the optimal transformation to stabilize variance and improve normality.
+
+```{r, eval=TRUE, echo=TRUE, warning=FALSE, message=FALSE, fig.align='center', fig.width=4, fig.height=4}
+# Extract the lambda value corresponding to the maximum likelihood estimate
+lambda <- fit2bc$x[which.max(fit2bc$y)]
+# Print the estimated lambda for the Box-Cox transformation
+sprintf("lambda = %.3f", lambda)
+```
+
+From the results generated by the `boxcox` function, we can use the following code to identify the optimal $\lambda$ value. In this case, the $\lambda$ value is `r round(lambda, 3)`, which is close to 0.5. According to Table 3.9 in the textbook, this suggests applying a square root transformation to the response variable `PeakDischarge`.
+
+Before refitting the ANOVA model, we can first perform the modified Levene's test again to check for equal variances of the square root-transformed `PeakDischarge` across the Method groups.
+```{r, warning=FALSE, message=FALSE}
+# library(asbio)
+# Perform modified Levene's test again after applying the 
+# square root transformation (common for stabilizing variance)
+modlevene.test(sqrt(df2$PeakDischarge), df2$Method)
+```
+```{r modlevtest2, eval=TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+mlout2 <- modlevene.test(sqrt(df2$PeakDischarge), df2$Method)
+```
+The p-value of the modified Levene's test is `r round(mlout2[[5]][1], 4)`, which is large, indicating that the variances across the different 'Method' groups are likely similar.
+
+
+Finally, we fit the ANOVA model using the square root-transformed `PeakDischarge`.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+# Fit a new ANOVA model using the square root-transformed 'PeakDischarge'
+fit2s <- aov(sqrt(PeakDischarge) ~ Method, data = df2)
+# Summary of the new ANOVA results after transformation
+summary(fit2s)
+```
+
+The p-value of the F-test in this new ANOVA table remains extremely small, providing strong evidence that the mean Peak Discharge differs across the Methods. The residual plots confirm that the assumptions of normality and constant variance are satisfied.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+# Diagnostic plots for the transformed ANOVA model
+par(mfrow = c(1, 2))
+plot(fit2s, which = 1:2)
+```
+```{r, eval=TRUE, echo=FALSE}
+par(mfrow = c(1, 1))
+```
+```{r, eval=TRUE, echo=FALSE}
+swout <- shapiro.test(fit2s$residuals)
+```
+
+If there is concern about the normality assumption, as indicated by a light-tailed distribution in the QQ-plot, we can conduct a formal hypothesis test for normality. The goal is to check if the test shows an insignificant result, indicating that the residuals do not deviate significantly from a normal distribution. For example, using the Shapiro-Wilk test for normality, we find that the p-value is `r round(swout[[2]], 3)`, which is greater than the pre-specified significance level of 0.05. This result indicates there is no evidence to suggest that the residuals are from a non-normal distribution.
+
+```{r, eval=TRUE, echo=TRUE}
+shapiro.test(fit2s$residuals)
+```
+<!--
 
 \newpage
 ## Simluate for Observing Robustness of ANOVA
@@ -359,3 +485,4 @@ print(sim_t2e_ncv)
 ```
 The simulated type II error is `r sim_t2e_ncv` when the variance is not constant, which much more than the type II error in the case of Normal assumption.
 
+-->
