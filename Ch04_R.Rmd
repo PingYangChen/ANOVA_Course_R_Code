@@ -1,7 +1,7 @@
 ---
 title: "Ch-04 R Codes"
 author: "Ping-Yang Chen"
-date: "2024-03-22"
+#date: "2024-03-22"
 output: pdf_document
 ---
 
@@ -60,9 +60,9 @@ summary(fit1)
 ```
 
 The procedure of diagnosing the residual is similar to that for the one-way ANOVA model. Please refer to the handout of R codes in Chapter 3 for more details of interpreting the residual plots.
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
-par(mfrow = c(2, 2))
-plot(fit1)
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+par(mfrow = c(1, 2))
+plot(fit1, which = 1:2)
 ```
 ```{r, eval=TRUE, echo = FALSE}
 par(mfrow = c(1, 1))
@@ -122,9 +122,9 @@ summary(fit2)
 
 The procedures of diagnosing the residual and multiple comparison are similar to those for the RCBD. Please refer to the previous section for more details.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
-par(mfrow = c(2, 2))
-plot(fit2)
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+par(mfrow = c(1, 2))
+plot(fit2, which = 1:2)
 ```
 ```{r, eval=TRUE, echo = FALSE}
 par(mfrow = c(1, 1))
@@ -177,7 +177,7 @@ If the design is BIBD, the adjusted treatment sum of squares is
 $$
 SS_{Treatment(adj)} = \frac{k\sum_{i=1}^b Q_i^2}{\lambda a} = \frac{3\sum_{i=1}^4 Q_i^2}{4\lambda}
 $$
-where $\lambda = \frac{r(k-1)}{a-1} = \frac{3\cdot 2}{3}=2$ and 
+where $$\lambda = \frac{r(k-1)}{a-1} = \frac{3\cdot 2}{3}=2$$ and 
 $$
 Q_i = y_{i\cdot}-\frac{1}{k}\sum_{j=1}^b n_{ij} y_{\cdot j} = y_{i\cdot}-\frac{1}{3}\sum_{j=1}^4 n_ij y_{\cdot j}
 $$ 
@@ -195,7 +195,7 @@ SS_Treatment_adj <- 3*sum(q^2)/(2*4)
 SS_Treatment_adj
 ```
 
-To obtain the ANOVA table with the adjusted treatment sum of squares for BIBD in R, keep the block effect in the first place of the R model formula for the `aov` function.
+To obtain the ANOVA table with the adjusted treatment sum of squares for BIBD in R, **keep the block effect in the first place of the R model formula** for the `aov` function.
 ```{r, eval=TRUE, echo=TRUE}
 fit3_treatment <- aov(ReactionTime ~ RawMaterialBatch + Catalysts, data = df3)
 summary(fit3_treatment)
@@ -221,11 +221,11 @@ fit3
 
 The procedures of diagnosing the residual and multiple comparison are similar to those for the RCBD. Please refer to the previous section for more details.
 
-```{r, eval=TRUE, echo=TRUE, fig.width=8, fig.height=8}
+```{r, eval=TRUE, echo=TRUE, fig.width=8, fig.height=4}
 # Residual Checking: 
 #   can use any aov model fit3_treatment or fit3_block
-par(mfrow = c(2, 2))
-plot(fit3_treatment)
+par(mfrow = c(1, 2))
+plot(fit3_treatment, which = 1:2)
 ```
 
 ```{r, eval=TRUE, echo = FALSE}
