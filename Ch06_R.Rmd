@@ -1,0 +1,366 @@
+---
+title: "Ch-06 R Codes"
+author: "Ping-Yang Chen"
+#date: "2024-03-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## $2^2$-Design: Chemical Process Example
+ 
+Read the csv file `6_ChemicalRecovery.csv` in R.
+```{r, eval=TRUE, echo=TRUE}
+df5 <- read.csv(file.path("data", "6_ChemicalRecovery.csv"))
+```
+
+
+The estimation of factor effects are:
+```{r, eval=FALSE, echo=TRUE, fig.align='center', fig.width=5}
+# Effect of factor A (reactant concentration)
+mean(df5$Recovery[df5$ReactConc == 1] - df5$Recovery[df5$ReactConc == -1])
+# or 2*mean(df5$Recovery*df5$ReactConc)
+
+# Effect of factor A (catalyst amount)
+mean(df5$Recovery[df5$CataAmo == 1] - df5$Recovery[df5$CataAmo == -1])
+
+# Effect of two-factor interaction AB
+twofi <- as.numeric(df5$ReactConc)*df5$CataAmo
+mean(df5$Recovery[twofi == 1] - df5$Recovery[twofi == -1])
+```
+```{r, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
+# Effect of factor A (reactant concentration)
+cat(sprintf("Effect of factor A (reactant concentration): %.4f\n\n", 
+  mean(df5$Recovery[df5$ReactConc == 1] - df5$Recovery[df5$ReactConc == -1])
+))
+# Effect of factor A (catalyst amount)
+cat(sprintf("Effect of factor A (catalyst amount): %.4f\n\n", 
+  mean(df5$Recovery[df5$CataAmo == 1] - df5$Recovery[df5$CataAmo == -1])
+))
+# Effect of two-factor interaction AB
+twofi <- as.numeric(df5$ReactConc)*df5$CataAmo
+cat(sprintf("Effect of two-factor interaction AB: %.4f\n\n", 
+  mean(df5$Recovery[twofi == 1] - df5$Recovery[twofi == -1])
+))
+```
+
+
+Use `aov()` to fit the ANOVA model (model description in math is omitted).
+Here, if the columns of the factor in the `data.frame` are not of the `factor` type. We can also specify the type of the factors as `factor` in the R model formula.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fit5 <- aov(Recovery ~ factor(ReactConc)*factor(CataAmo), data = df5)
+summary(fit5)
+```
+
+The two main effects are significant and their two-factor interaction may not exist.
+
+To visualize the analysis result of the factorial experiment, interaction plot is commonly used tool.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+interaction.plot(
+  x.factor = df5$ReactConc, # x-axis variable
+  trace.factor = df5$CataAmo, # variable for lines
+  response = df5$Recovery, # y-axis variable
+  ylab = "Recovery", xlab = "Reactant Concentration", 
+  col = c("firebrick", "dodgerblue2"),
+  lty = 1, lwd = 3, trace.label = "Catalyst\nAmount"
+)
+```
+
+
+## $2^3$-Design: Plasma Etching Example
+
+Read the csv file `6_PlasmaEtching_2^3.csv` in R.
+```{r, eval=TRUE, echo=TRUE}
+df6 <- read.csv(file.path("data", "6_PlasmaEtching_2^3.csv"))
+```
+
+The estimation of factor effects are:
+```{r, eval=FALSE, echo=TRUE, fig.align='center', fig.width=5}
+# Effect of main effects
+2*mean(df6$EachRate*df6$Gap)
+2*mean(df6$EachRate*df6$GasFlow)
+2*mean(df6$EachRate*df6$Power)
+
+# Effect of two-factor interactions
+GapGasFlow <- df6$Gap * df6$GasFlow
+GapPower <- df6$Gap * df6$Power
+GasFlowPower <- df6$GasFlow * df6$Power
+2*mean(df6$EachRate*GapGasFlow)
+2*mean(df6$EachRate*GapPower)
+2*mean(df6$EachRate*GasFlowPower)
+
+# Effect of three-factor interaction
+GapGasFlowPower <- df6$Gap * df6$GasFlow * df6$Power
+2*mean(df6$EachRate*GapGasFlowPower)
+```
+
+```{r df6eff, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
+# Effect of two-factor interactions
+GapGasFlow <- df6$Gap * df6$GasFlow
+GapPower <- df6$Gap * df6$Power
+GasFlowPower <- df6$GasFlow * df6$Power
+# Effect of two-factor interaction AB
+GapGasFlowPower <- df6$Gap * df6$GasFlow * df6$Power
+
+effs <- c(
+  2*mean(df6$EachRate*df6$Gap),
+  2*mean(df6$EachRate*df6$GasFlow),
+  2*mean(df6$EachRate*df6$Power),
+  2*mean(df6$EachRate*GapGasFlow),
+  2*mean(df6$EachRate*GapPower),
+  2*mean(df6$EachRate*GasFlowPower),
+  2*mean(df6$EachRate*GapGasFlowPower)
+)
+
+eff6 <- data.frame(
+  Factor = c("A", "B", "C", "AB", "AC", "BC", "ABC"),
+  "Est.Effect" = effs
+)
+print(eff6)
+```
+
+Use `aov()` to fit the ANOVA model (model description in math is omitted).
+Here, if the columns of the factor in the `data.frame` are not of the `factor` type. We can also specify the type of the factors as `factor` in the R model formula.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fit6 <- aov(
+  EachRate ~ factor(Gap) * factor(GasFlow) * factor(Power), 
+  data = df6
+)
+summary(fit6)
+```
+
+The significant effects are main effects `Gap` and `Power`, and, the two-factor interaction `Gap:Power`.
+
+WE can also fit a response surface model and obtain the same conslusion.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+ols6_full <- lm(EachRate ~ Gap * GasFlow * Power, data = df6)
+summary(ols6_full)
+```
+
+
+The final RSM is the reduced model that those insignificant terms are removed from the full model. Now we can use the real value of the factot levels as the predictors' values fro this reduced model for better interpretation.
+```{r ols6_reduced, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+ols6_reduced <- lm(EachRate ~ NumGap * NumPower, data = df6)
+summary(ols6_reduced)
+```
+
+```{r ols6_reduced_contour, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+x1_grid <- seq(min(df6$NumGap), max(df6$NumGap), length = 100)
+x2_grid <- seq(min(df6$NumPower), max(df6$NumPower), length = 100)
+newx <- data.frame(
+  NumGap = rep(x1_grid, each = 100),
+  NumPower = rep(x2_grid, time = 100)
+)
+
+rsplot_data6 <- data.frame(newx, rs = predict(ols6_reduced, newx))
+
+library(ggplot2)
+#- Add color to the contour plot
+ggplot(rsplot_data6) +
+  geom_contour(aes(NumGap, NumPower, z = rs), colour = "white") +
+  geom_contour_filled(aes(NumGap, NumPower, z = rs))  
+```
+
+## Unreplicated $2^k$ Factorial Designs: The Resin Plant Experiment
+
+Read the csv file `6_PilotPlant.csv` in R.
+```{r, eval=TRUE, echo=TRUE}
+df7 <- read.csv(file.path("data", "6_PilotPlant.csv"))
+```
+
+The estimation of factor effects are:
+```{r eff7, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+# Compute the model matrix of all effect terms without intercept
+mmat7 <- model.matrix( ~ Temperature*Pressure*CH2OConc*StirRate - 1, data = df7)
+# Calculate the effect sizes using the +/- signs of the model matrix
+eff7 <- numeric(ncol(mmat7))
+for (i in 1:ncol(mmat7)) {
+  eff7[i] <- 2*mean(df7$FiltrationRate*mmat7[,i])
+}
+names(eff7) <- colnames(mmat7)
+```
+
+```{r, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
+print(data.frame(
+  Factor = names(eff7),
+  "Est.Effect" = as.vector(eff7)
+))
+```
+
+Because there is no replicates in each treatment combination, the estimate of the random error $\sigma^2$ does not exist and the ANOVA table is not available. Of all effect terms, we try of eliminate some of them before analyzing the data. According to the model assumption, the effects that are negligible should be similar to random error which is normally distributed with zero mean and constant variance. Therefore, a QQ-plot or half-Normal plot is helpful to identify effective effects. Belows are the codes of half-Normal plot.
+
+```{r halfqqnorm, eval=TRUE, echo=TRUE}
+# Half Normal Plot
+halfqqnorm <- function(input, tol = 0.5) {
+	y <- sort(abs(input))
+	nq <- qnorm(seq(0.5, 0.99, length = length(y)))
+	plot(y, nq, yaxt = "n", pch = 15, 
+	     xlab = "|Effects|", ylab = "Half Normal Probability")
+	title("Half Normal Plot")
+	# choose anchor point to draw a straight line
+	s <- min(which(diff(y)/diff(range(y)) > 1/(length(y)-1)))
+	abline(a = -y[1]*(nq[s]-nq[1])/(y[s]-y[1]), b = (nq[s]-nq[1])/(y[s]-y[1]))
+	axis(2, at = qnorm(seq(0.5, 0.9999, length = 5)), 
+	     labels = round(seq(0, 1, length = 5),2))
+	loc <- sqrt((nq - (y - y[1])*(nq[s]-nq[1])/(y[s]-y[1]))^2) > tol
+	if (is.null(names(y))) {
+		text(y[loc], nq[loc], order(abs(input))[loc], pos = 2)
+	} else {
+		text(y[loc], nq[loc], names(abs(input))[order(abs(input))[loc]], pos = 2)
+	}
+}
+```
+
+
+```{r h7, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+halfqqnorm(eff7)
+```
+
+By the half Normal plot, we find out that the main effects `Temperature`, `CH2OConc`and `StirRate` and interactions `Temperature:CH2OConc`, `Temperature:StirRate` appear to be large.
+
+Based on the observation from the half Normal plot, now the ANOVA model is
+
+\begin{equation}
+y_{ijkl} = \mu + \tau_i + \beta_j + \gamma_k + (\tau\beta)_{ij} + (\tau\gamma)_{ik} + \varepsilon_{ijkl}
+\end{equation}
+
+- $\tau_i$ is the effect of the $i$th `Temperature` level, $i = 1, 2$.
+- $\beta_j$ is the effect of the $j$th `CH2OConc` level, $j = 1, 2$.
+- $\gamma_k$ is the effect of the $k$th `StirRate` level, $j = 1, 2$.
+- $(\tau\beta)_{ij}$ is the interaction effect of the $i$th `Temperature` level and the $j$th `CH2OConc` level.
+- $(\tau\gamma)_{ij}$ is the interaction effect of the $i$th `Temperature` level and the $k$th `StirRate` level.
+- $\varepsilon_{ijkl}$ is the random error, $l = 1, 2$, satisfying
+$$\varepsilon_{ijkl}\overset{i.i.d.}{\sim}N(0, \sigma^2) \text{ where } \sigma^2 \text{ is the conatnt variance.}$$
+
+Use `aov()` to fit the ANOVA model.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fit7 <- aov(
+  FiltrationRate ~ factor(Temperature) * (factor(CH2OConc) + factor(StirRate)), 
+  data = df7
+)
+summary(fit7)
+```
+
+Here, we left the interpretation of the response surface model for practice.
+
+<!--
+```{r, eval=TRUE, echo=TRUE}
+df8 <- read.csv(file.path("data", "6_Drilling.csv"))
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fit8 <- aov(AdvRate ~ factor(FlowRate) * (factor(RotatSp) + factor(MudType)), data = df8)
+summary(fit8)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+interaction.plot(
+  x.factor = df8$FlowRate, # x-axis variable
+  trace.factor = df8$RotatSp, # variable for lines
+  response = df8$AdvRate, # y-axis variable
+  ylab = "AdvRate", xlab = "FlowRate", 
+  col = c("firebrick", "dodgerblue2"),
+  lty = 1, lwd = 3, trace.label = "RotatSp"
+)
+
+interaction.plot(
+  x.factor = df8$FlowRate, # x-axis variable
+  trace.factor = df8$MudType, # variable for lines
+  response = df8$AdvRate, # y-axis variable
+  ylab = "AdvRate", xlab = "FlowRate", 
+  col = c("firebrick", "dodgerblue2"),
+  lty = 1, lwd = 3, trace.label = "MudType"
+)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+df9 <- read.csv(file.path("data", "6_Sidewall.csv"))
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+fit9 <- aov(AvgDefectNum ~ factor(Temperature) + factor(ResinFlow), data = df9)
+summary(fit9)
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=6}
+par(mfrow = c(2, 2))
+plot(fit9)
+par(mfrow = c(1, 1))
+```
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+plot(
+  as.numeric(df9$ClampTime), fit9$residuals, pch = 16,
+  xlab = "ClampTime", ylab = "residuals", xlim = c(-2, 2)
+)
+abline(h = 0, lty = 3)
+```
+
+```{r, eval=TRUE, echo=TRUE}
+df10 <- read.csv(file.path("data", "6_Wafer.csv"))
+```
+
+```{r, eval=TRUE, echo=TRUE}
+df11 <- read.csv(file.path("data", "6_CreditCardMarketing.csv"))
+```
+-->
+
+## Addition of Center Points to a $2^k$ Designs 
+
+Recall the Resin Plant Experiment. Read the csv file `6_PilotPlant.csv` in R.
+
+```{r df7a, eval=TRUE, echo=TRUE}
+df7 <- read.csv(file.path("data", "6_PilotPlant.csv"))
+```
+
+```{r df7c, eval=TRUE, echo=TRUE}
+df7_C <- data.frame(
+  Temperature = rep(0, 4),
+  Pressure = rep(0, 4),
+  CH2OConc = rep(0, 4),
+  StirRate = rep(0, 4),
+  FiltrationRate = c(73, 75, 66, 69)
+)
+```
+
+The calculation of $SS_{Pure quadratic}$ with degree of freedom 1.
+```{r sspq, eval=TRUE, echo=TRUE}
+Yf_bar <- mean(df7$FiltrationRate)
+Yc_bar <- mean(df7_C$FiltrationRate)
+nf <- nrow(df7)
+nc <- nrow(df7_C)
+SS_pureQuad <- nf*nc*(Yf_bar - Yc_bar)^2/(nf + nc)
+```
+
+The calculation of $SS_{E}$ with degree of freedom $n_c - 1$.
+
+```{r sse, eval=TRUE, echo=TRUE}
+SS_E <- sum((df7_C$FiltrationRate - mean(df7_C$FiltrationRate))^2)
+```
+
+To test the significance of the Curvature, we compute the ratio of $MS_{Pure quadratic}$ and $MS_{E}$ as the $F$-statistic which follows the $F$ distribution with degrees of freedom 1 and $n_c - 1$.
+```{r, eval=TRUE, echo=TRUE}
+MS_pureQuad <- SS_pureQuad/1
+MS_E <- SS_E/(nc - 1)
+fval <- MS_pureQuad/MS_E
+pval <- 1 - pf(fval, 1, nc - 1) # p-value
+```
+
+The part of the testing the significance of the Curvature of the ANOVA table.
+```{r, eval=TRUE, echo=TRUE}
+print(data.frame(
+  Source = c("Curvature", "Residual"),
+  SS = c(SS_pureQuad, SS_E),
+  DF = c(1, nc - 1), 
+  MS = c(MS_pureQuad, MS_E),
+  "F" = c(sprintf("%.3f", fval), ""),
+  "Pr(>F)" = c(sprintf("%.3f", pval), "")
+))
+```
