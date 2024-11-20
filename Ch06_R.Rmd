@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
+  
 ## $2^2$-Design: Chemical Process Example
  
 Read the csv file `6_ChemicalRecovery.csv` in R.
