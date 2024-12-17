@@ -9,7 +9,10 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-  
+Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Edition. John Wiley & Sons.
+
+Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
+
 ## $2^2$-Design: Chemical Process Example
  
 Read the csv file `6_ChemicalRecovery.csv` in R.
