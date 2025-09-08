@@ -150,7 +150,11 @@ degrees of freedom and $n_2-1$ denominator degrees of freedom. Given the signifi
 var.test(df1$ModifiedMortar, df1$UnmodifiedMortar,
          alternative = "two.sided")
 ```
-The F-test shows a large p-value, 0.4785, and hence, we do not reject $H_{V0}$. That is, there is no evidence to conclude the variances of the two populations, strength of modified and original Mortar, are different.
+```{r vartest, eval=TRUE, echo=FALSE, fig.align='center'}
+vartest <- var.test(df1$ModifiedMortar, df1$UnmodifiedMortar,
+                    alternative = "two.sided")
+```
+The F-test shows a large p-value, `r round(vartest$p.value, 4)`, and hence, we do not reject $H_{V0}$. That is, there is no evidence to conclude the variances of the two populations, strength of modified and original Mortar, are different.
 
 Then, we know that we are using two-sample t-test under equal variance setting.
 For significance level $\alpha = 0.05$, we set `var.equal = TRUE` and perform the two-sample t-test as the following code.
