@@ -69,7 +69,7 @@ summary(df1)
 
 The quick and direct approach to examine the existence of the difference between the response of two treatments (groups, levels of a factor) is to use graphs. The most common way is to draw to boxplots for the response values of each treatment.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6}
 # Transform the dataset from wide layout to long layout
 library(reshape2)
 df1_L <- stack(df1, select = c("ModifiedMortar","UnmodifiedMortar"))
@@ -77,6 +77,10 @@ colnames(df1_L) <- c("Strength", "Mortar")
 # Draw the grouped boxplot
 boxplot(Strength ~ Mortar, data = df1_L)
 ```
+
+The boxplot shows that: `ModifiedMortar` has lower median tension bond strength with larger variation, and, `UnmodifiedMortar` has higher and more consistent tension bond strength.
+
+
 
 \newpage
 ## R Function of t-tests
@@ -281,4 +285,9 @@ t.test(df3$Tip1, df3$Tip2,
 ```
 The test shows that the p-value is 0.7976 which is greater than $\alpha$, and therefore we do not reject $H_0$. That is, there is no evidence to confirm the non-zero mean of the population of the difference between measurements of two tips.
 
-Normality check is needed. I skip the assumption checking process here due to redundancy.
+For paired t-test, we check the Normality of the $d_j = y_{1j} - y_{2j}$. According to the QQ plots, Normality check is passed because most of the observed difference between hardness of tips on the QQ plots are closed to the straight line.
+```{r, eval=TRUE, echo=TRUE, fig.align='center'}
+tip_diff <- df3$Tip1 - df3$Tip2
+qqnorm(tip_diff, main = "QQ Plot of Tips Hardness Difference")
+qqline(tip_diff, col = "red")
+```
