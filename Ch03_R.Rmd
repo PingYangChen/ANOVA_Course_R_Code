@@ -15,7 +15,12 @@ Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
 
 # Chapter 3
 
-## One-way ANOVA
+## One-way ANOVA: Plasma Etching Experiment
+
+Create an csv file to store the data and then read it in R.
+```{r, echo=FALSE, fig.align='center', out.width='30%', fig.cap='Plasma Etching Experiment Data'}
+knitr::include_graphics("image/3_PlasmaEtching.png")
+```
 
 Read the csv file `3_PlasmaEtching.csv` in R. Make sure that in the `data.frame` the variable `Power` is a factor. If not sure, apply `as.factor()` function to set the property of the variable `Power` after reading the dataset.
 ```{r, eval=TRUE, echo=TRUE}
@@ -34,28 +39,45 @@ Alternatively, boxplots provide a quick and direct means of observing the differ
 # Draw the grouped boxplot
 boxplot(EtchRate ~ Power, data = df1)
 ```
+The boxplot shows that: as `Power` increases, the median `EtchRate` increases steadily. This finding would imply that higher power levels produce higher etching rates.
 
+To analysis this plasma etching experiment data, the ANOVA model is 
+$$
+y_{ij} = \mu + \tau_i + \varepsilon_{ij}, \begin{cases}i & = 1, 2, 3, 4 \\ j & = 1, 2, 3, 4, 5\end{cases}
+$$
+where $\mu$ is an overall mean, $\tau_i$ is the $i$th treatment (`Power`) effect and $\varepsilon_{ij}$ is the random experiment error that is assumed following $N(0, \sigma^2)$ identically and independently.
 
-The function `aov()` fits the ANOVA model. For one-way ANOVA, the command is as follows. Then, we call `summary()` to examine the ANOVA table.
+Let the treatment means to be $\mu_i = \mu+\tau_i$, we test the statistical hypotheses:
+$$
+\begin{array}{ll}
+H_0: & \mu_1 = \mu_2 = \mu_3 = \mu_4 \\
+H_1: & \text{at least one mean is different} \\
+\end{array}
+$$
+In R, the function `aov()` fits the ANOVA model. For one-way ANOVA, the command is as follows. Then, we call `summary()` to examine the ANOVA table.
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
 fit <- aov(EtchRate ~ Power, data = df1)
 summary(fit)
-names(fit)
-sum(fit$residuals^2)/(nrow(df1) - length(unique(df1$Power)))
-sum(fit$residuals^2)/fit$df.residual
-
-
-summary(fit)[[1]][2,3]
-
-typeof(summary(fit))
-
-shapiro.test(fit$residuas)
-
 ```
 
 
-## Model Adequacy Checking
+### Model Adequacy Checking
 
+
+```{r, eval=FALSE, echo=FALSE}
+
+names(fit)
+sum(fit$residuals^2)/(nrow(df1) - length(unique(df1$Power)))
+sum(fit$residuals^2)/fit$df.residual
+typeof(summary(fit))
+summary(fit)[[1]][2,3]
+
+
+
+shapiro.test(fit$residuals)
+```
+
+<!--
 The adequacy of an ANOVA model can be studied from residual plots. The basic approach is to use the `plot()` function with the fitted ANOVA model object as its input argument. Since there are four residual plots, we can use `par(mfrow = c(2, 2))` before the `plot()` function to view all of them simultaneously.
 
 The first (upper left) plot is the residual plot against the fitted values. This plot is used to check the consistency of the variance with changes in the fitted value. A lack of any visually obvious pattern in the dots on the plot is desired.
@@ -63,8 +85,16 @@ The first (upper left) plot is the residual plot against the fitted values. This
 The second (upper right) plot is the residuals' Normal Quantile-Quantile (QQ) plot. Ideally, the dots form a straight line.
 
 The remaining two plots at the bottom are standardized residuals against the fitted values and standardized residuals against the factor levels, respectively. They are also used to check the consistency of the variance.
+-->
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+The adequacy of an ANOVA model can be studied from residual plots. The basic approach is to use the `plot()` function with the fitted ANOVA model object as its input argument. There are four residual plots and only only need the first two. The following R commands are used to view both residual plots simultaneously.
+
+The left plot is the residual plot against the fitted values. This plot is used to check the consistency of the variance with changes in the fitted value. A lack of any visually obvious pattern in the dots on the plot is desired.
+
+The right plot is the residuals' Normal Quantile-Quantile (QQ) plot. The QQ plot provides information about whether the residuals (or data) follow a normal distribution by comparing their quantiles to those of a theoretical normal distribution. Ideally, the dots form a straight line.
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 par(mfrow = c(1, 2))
 plot(fit, which = 1:2)
 ```
@@ -72,8 +102,35 @@ plot(fit, which = 1:2)
 par(mfrow = c(1, 1))
 ```
 
+To check the independence of the residual, we draw the scatter plot of residuals against the experiment order. A lack of any visually obvious pattern in the dots on the plot is desired.
 
-## Post-ANOVA Comparison of Means
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
+resid <- fit$residuals
+plot(1:length(resid), resid, xlab = "Run Order", ylab = "Residual")
+```
+
+There are also statistical tests for model adequacy checking. 
+
+For checking normality, one commonly used statistical test is the Shapiro–Wilk test. A p-value larger than the significance level indicates that there is no evidence against the assumption that the residuals are normally distributed.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
+shapiro.test(fit$residuals)
+```
+
+For checking the equality of variance among treatment groups, a recommended statistical test is the modified Levene's test. A p-value larger than the significance level indicates that there is no evidence against the assumption that the residuals are homoscedastic (i.e., have equal variances across groups).
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE, fig.align='center', fig.width=4, fig.height=4}
+# Install the asbio package
+# install.packages("asbio")
+# Load the asbio package, which includes the modified Levene's test
+# for homogeneity of variance
+library(asbio)
+# Perform Levene's test for homogeneity of variance
+# It checks if the variances across the different 'Power' groups are equal
+modlevene.test(fit$residuals, df1$Power)
+```
+
+### Post-ANOVA Comparison of Means
 
 The estimate of the overall mean $\mu$ and the Power's treatment effects $\tau_1$ to $\tau_4$ are
 \begin{align*}
@@ -144,7 +201,7 @@ The most important parts of the outputs are shown below:
 - `$groups` indicates the significance of the difference in the etching rate at each level of power. The column groups in `$groups` encodes the treatment levels with no significant difference in the etching rate by the same alphabet letter.
 
 
-
+\newpage
 ## Variance-Stabilizing Transformations: Peak Discharge Experiments
 
 Read the csv file `3_PeakDischarge.csv` in R. Make sure that in the `data.frame` the variable `Method` is a factor because it represents categorical data (i.e., different methods). If not sure, apply `as.factor()` function to set the property of the variable `Method` after reading the dataset.
@@ -194,7 +251,7 @@ The p-value of the F-test in the ANOVA table is extremely small, providing signi
 
 If we examine the residual plots, particularly the scatter of fitted values versus residuals, we notice an increasing trend in the variation of residuals across the Method groups. This suggests that the assumption of constant variance in the ANOVA model may be violated.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 # Diagnostic plots for the ANOVA model: Residuals and Q-Q plot
 par(mfrow = c(1, 2))
 plot(fit2, which = 1:2)
@@ -249,7 +306,7 @@ summary(fit2s)
 
 The p-value of the F-test in this new ANOVA table remains extremely small, providing strong evidence that the mean Peak Discharge differs across the Methods. The residual plots confirm that the assumptions of normality and constant variance are satisfied.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 # Diagnostic plots for the transformed ANOVA model
 par(mfrow = c(1, 2))
 plot(fit2s, which = 1:2)
