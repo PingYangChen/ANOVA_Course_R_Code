@@ -201,6 +201,87 @@ The most important parts of the outputs are shown below:
 - `$groups` indicates the significance of the difference in the etching rate at each level of power. The column groups in `$groups` encodes the treatment levels with no significant difference in the etching rate by the same alphabet letter.
 
 
+
+\newpage
+## Connection to the Linear Regression Model
+
+Recall the plasma etching experiment data in the previous section, we store the data in a form of $(x_k, y_k)$, $k = 1, ..., 20$ and $X$ is a **categorical** variable representing four levels of plasma power: `160`, `180`, `200` and `220`.
+
+Under regression setting, we have the response variable $Y$ and one independent variable $X$, and, the simple linear regression model is $y = \beta_0 + \beta_1 x +\varepsilon$ where $\varepsilon$ is the random error following the Normal distribution with zero mean and a standard deviation $\sigma$ identically and independently. However, given the fact that $X$ is a categorical variable, this model is wrong!!
+
+Since $X$ is a categorical variable, it does not make sense to plug the numeric codes (`160`, `180`, `200`, `220`) directly into a linear model as if they were quantitative values. Doing so would falsely imply that the relationship between plasma power and etching rate is linear and continuous, which is not justified when 
+$X$ only represents four distinct levels.
+
+Instead of treating $X$ as numerical, we treat it as a factor with four levels (`A = 160`, `B = 180`, `C = 200`, `D = 220`).
+For this categorical variable with four levels, we represent it by three indicator (dummy) variables:
+
+| $x_k$ | $x_{1k}$ | $x_{2k}$ | $x_{3k}$ |
+| ------ | ------ | ------ | ------ |
+| `A = 160` | 0 | 0 | 0 |
+| `B = 180` | 1 | 0 | 0 |
+| `C = 200` | 0 | 1 | 0 | 
+| `D = 220` | 0 | 0 | 1 | 
+
+Under the regression framework, we can model it using these three indicator (dummy) variables:
+
+$$y_k = \beta_0 + \beta_{1} x_{1k} + \beta_{2} x_{2k} + \beta_{3} x_{3k} + \varepsilon_{k},\quad \varepsilon_{k}\overset{\text{i.i.d.}}{\sim} N(0, \sigma^2)$$
+where
+$$
+x_{1k} = \begin{cases}1 & \text{if } x_k = 180 \\0 & \text{otherwise} \end{cases},\quad
+x_{2k} = \begin{cases}1 & \text{if } x_k = 200 \\0 & \text{otherwise} \end{cases},\quad\text{and}\quad
+x_{3k} = \begin{cases}1 & \text{if } x_k = 220 \\0 & \text{otherwise} \end{cases}
+$$
+
+Again, we read the csv file `3_PlasmaEtching.csv` in R. Make sure that in the `data.frame` the variable `Power` is a factor. Usually we need to apply `as.factor()` function to force the property of the variable `Power` to be a factor.
+```{r, eval=TRUE, echo=TRUE}
+df1 <- read.csv(file.path("data", "3_PlasmaEtching.csv"))
+df1$Power <- as.factor(df1$Power)
+```
+
+Then apply `lm` function to fit a linear regression model.
+```{r, eval=TRUE, echo=TRUE}
+regm <- lm(EtchRate ~ Power, data = df1)
+summary(regm)
+```
+
+From the estimated coefficients, we have the working regression model:
+\begin{align*}
+\hat{y} & = \hat{\beta}_0 + \hat{\beta}_{1} x_{1k} + \hat{\beta}_{2} x_{2k} + \hat{\beta}_{3} x_{3k} \\
+        & = 551.2 + 36.2 x_{1k} + 74.2 x_{2k} + 155.8 x_{3k} \\
+\end{align*}
+
+- For $x_k = 160$, $\hat{Y}_k = 551.2 + 36.2 \cdot 0 + 74.2 \cdot 0 + 155.8 \cdot 0 = 551.2$.
+- For $x_k = 180$, $\hat{Y}_k = 551.2 + 36.2 \cdot 1 + 74.2 \cdot 0 + 155.8 \cdot 0 = 587.4$.
+- For $x_k = 200$, $\hat{Y}_k = 551.2 + 36.2 \cdot 0 + 74.2 \cdot 1 + 155.8 \cdot 0 = 625.4$.
+- For $x_k = 220$, $\hat{Y}_k = 551.2 + 36.2 \cdot 0 + 74.2 \cdot 0 + 155.8 \cdot 1 = 707.0$.
+
+
+Now, we look back to the ANOVA model introduced in the previous section
+$$
+y_{ij} = \mu + \tau_i + \varepsilon_{ij}, \begin{cases}i & = 1, 2, 3, 4 \\ j & = 1, 2, 3, 4, 5\end{cases}
+$$
+where $\tau_i$ represents the effect on the response at the $i$ level of plasma power.
+
+The estimates of the treatment means are
+```{r, eval=FALSE, echo=TRUE, fig.align='center', fig.width=4}
+sprintf("mu_1 = %.1f", mean(df1$EtchRate[df1$Power == 160])) # mu_1
+sprintf("mu_2 = %.1f", mean(df1$EtchRate[df1$Power == 180])) # mu_2
+sprintf("mu_3 = %.1f", mean(df1$EtchRate[df1$Power == 200])) # mu_3
+sprintf("mu_4 = %.1f", mean(df1$EtchRate[df1$Power == 220])) # mu_4
+```
+
+\begin{align*}
+\hat{\mu}_1 & = \hat{\mu} + \hat{\tau}_1 = \frac{1}{n}\sum_{j=1}^n y_{1j} = \bar{y}_{1\cdot} = 551.2 \\
+\hat{\mu}_2 & = \hat{\mu} + \hat{\tau}_2 = \frac{1}{n}\sum_{j=1}^n y_{2j} = \bar{y}_{2\cdot} = 587.4 \\
+\hat{\mu}_3 & = \hat{\mu} + \hat{\tau}_3 = \frac{1}{n}\sum_{j=1}^n y_{3j} = \bar{y}_{3\cdot} = 625.4 \\ 
+\hat{\mu}_4 & = \hat{\mu} + \hat{\tau}_4 = \frac{1}{n}\sum_{j=1}^n y_{4j} = \bar{y}_{4\cdot} = 707.0 \\
+\end{align*}
+
+
+
+
+
+
 \newpage
 ## Variance-Stabilizing Transformations: Peak Discharge Experiments
 
