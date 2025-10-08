@@ -42,7 +42,7 @@ tapply(df1$Yield, df1$ExtPressure, summary)
 
 Use boxplots to observe the differences of `Yield` among four treatments of `ExtPressure`, and, the differences of `Yield` among six resin batches `ResinBatchNo`. The average `Yield` tends to be lower for higher `ExtPressure` and varies in different `ResinBatchNo`. Thus, to investigate the `ExtPressure` effect on the `Yield`, we must eliminate the effect caused by `ResinBatchNo`. That is, we treat `ResinBatchNo` as the block effect.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 # Draw the grouped boxplot
 par(mfrow = c(1, 2))
 boxplot(Yield ~ ExtPressure, data = df1)
@@ -52,6 +52,9 @@ boxplot(Yield ~ ResinBatchNo, data = df1)
 par(mfrow = c(1, 1))
 ```
 
+The boxplots show that: 
+- As `ExtPressure` increases, the median `Yield` decreases steadily. This finding would imply that higher extrusion pressure levels produce lower yield rates.
+- There are noticeable batch-to-batch differences, suggesting that resin quality significantly affects product yield.
 
 The function `aov()` fits the ANOVA model, and the ANOVA table is obtained by calling `summary()`. For Randomized Complete Block Design (RCBD), the R model formula includes two items on its right-hand-side: `ExtPressure + ResinBatchNo`. It's important to note that the order of placing the factor and block effects is somewhat arbitrary for RCBD. However, this order matters if the design is incomplete, as some sums of squares are adjusted accordingly.
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
@@ -59,8 +62,11 @@ fit1 <- aov(Yield ~ ExtPressure + ResinBatchNo, data = df1)
 summary(fit1)
 ```
 
+Let the significance level $\alpha = 0.05$. The ANOVA shows the P-value for the effect of extrusion pressure on yield is `r round(summary(fit1)[[1]][1,5], 4)`, and therefore, we conclude that extrusion pressure affects the mean yield. Also, the mean yields from resin batches (blocks) differ significantly, because the corresponding P-value is `r round(summary(fit1)[[1]][2,5], 4)`.
+
+
 The procedure of diagnosing the residual is similar to that for the one-way ANOVA model. Please refer to the handout of R codes in Chapter 3 for more details of interpreting the residual plots.
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 par(mfrow = c(1, 2))
 plot(fit1, which = 1:2)
 ```
@@ -75,6 +81,7 @@ plot(
   xlab = "ResinBatchNo", ylab = "residuals"
 )
 ```
+
 Multiple comparison is performed for the treatment effect. The following codes demonstrate the use of Tukey’s test and Fisher's LSD method. For Tukey’s test, add the input argument `which = "ExtPressure"` to only show the test results of comparing differences among the `ExtPressure` levels. For Fisher's LSD method, specify `trt = "ExtPressure"` as the input argument to the `LSD.test()` function to show the comparison results among the `ExtPressure` levels. For information of interpreting the results, please refer to the handout of R codes in Chapter 3.
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
@@ -90,6 +97,7 @@ out <- LSD.test(fit1, trt = "ExtPressure", p.adj = "bonferroni")
 out$group
 ```
 
+\newpage
 ## Latin Square Designs
 
 Read the csv file `4_RocketPropellant.csv` in R. Make sure that in the `data.frame` the variables `RawMaterialBatch`, `Operator` and `Formulation` are the type of factor. If not sure, apply `as.factor()` on those variables after reading the dataset.
@@ -102,7 +110,7 @@ df2$Formulation <- as.factor(df2$Formulation)
 The boxplots shows the distributions of `BurningRate` under subgroups of (left) five treatments of `Formulation`; (middle) five levels of the first block `RawMaterialBatch`; (right) five levels of the second block `Operator`.
 The left plot suggests that there may be differences in the `BurningRate` among the different `Formulations` used. The middle and right plots, show the `BurningRate` behaves differently within each level of blocks. Thus, the AONVA model must take the block effects into account.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=9}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=3.6}
 # Draw the grouped boxplot
 par(mfrow = c(1, 3))
 boxplot(BurningRate ~ Formulation, data = df2)
@@ -122,7 +130,7 @@ summary(fit2)
 
 The procedures of diagnosing the residual and multiple comparison are similar to those for the RCBD. Please refer to the previous section for more details.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 par(mfrow = c(1, 2))
 plot(fit2, which = 1:2)
 ```
@@ -130,7 +138,7 @@ plot(fit2, which = 1:2)
 par(mfrow = c(1, 1))
 ```
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=4}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 par(mfrow = c(1, 2))
 plot(
   as.numeric(df2$RawMaterialBatch), fit2$residuals,
@@ -157,7 +165,7 @@ out$group
 
 
 
-
+\newpage
 
 ## Balanced Incomplete Block Design
 
@@ -221,7 +229,7 @@ fit3
 
 The procedures of diagnosing the residual and multiple comparison are similar to those for the RCBD. Please refer to the previous section for more details.
 
-```{r, eval=TRUE, echo=TRUE, fig.width=8, fig.height=4}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 # Residual Checking: 
 #   can use any aov model fit3_treatment or fit3_block
 par(mfrow = c(1, 2))
