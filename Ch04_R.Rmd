@@ -52,11 +52,13 @@ boxplot(Yield ~ ResinBatchNo, data = df1)
 par(mfrow = c(1, 1))
 ```
 
+<!--
 The boxplots show that: 
 - As `ExtPressure` increases, the median `Yield` decreases steadily. This finding would imply that higher extrusion pressure levels produce lower yield rates.
 - There are noticeable batch-to-batch differences, suggesting that resin quality significantly affects product yield.
+-->
 
-The function `aov()` fits the ANOVA model, and the ANOVA table is obtained by calling `summary()`. For Randomized Complete Block Design (RCBD), the R model formula includes two items on its right-hand-side: `ExtPressure + ResinBatchNo`. It's important to note that the order of placing the factor and block effects is somewhat arbitrary for RCBD. However, this order matters if the design is incomplete, as some sums of squares are adjusted accordingly.
+The function `aov()` fits the ANOVA model, and the ANOVA table is obtained by calling `summary()`. For Randomized Complete Block Design (RCBD), the R model formula includes two items on its right-hand-side: `ExtPressure + ResinBatchNo`. It's important to note that the order of placing the factor and block effects is somewhat arbitrary for RCBD. However, this order matters if the design is incomplete (see BIBD), as some sums of squares are adjusted accordingly.
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
 fit1 <- aov(Yield ~ ExtPressure + ResinBatchNo, data = df1)
 summary(fit1)
@@ -97,8 +99,15 @@ out <- LSD.test(fit1, trt = "ExtPressure", p.adj = "bonferroni")
 out$group
 ```
 
+The multiple comparison results show that the effect on `Yield` when `ExtPressure = 9100` is significantly lower than effects on `Yield` when `ExtPressure = 8500` and `ExtPressure = 8700`, and seems no different from the effect on `Yield` when `ExtPressure = 8900`.
+
 \newpage
 ## Latin Square Designs
+
+Create an csv file to store the data and then read it in R.
+```{r, echo=FALSE, fig.align='center', out.width='30%', fig.cap='Rocket Propellant Latin Square Experiment Data'}
+knitr::include_graphics("image/4_RocketPropellant.png")
+```
 
 Read the csv file `4_RocketPropellant.csv` in R. Make sure that in the `data.frame` the variables `RawMaterialBatch`, `Operator` and `Formulation` are the type of factor. If not sure, apply `as.factor()` on those variables after reading the dataset.
 ```{r, eval=TRUE, echo=TRUE}
@@ -107,7 +116,7 @@ df2$RawMaterialBatch <- as.factor(df2$RawMaterialBatch)
 df2$Operator <- as.factor(df2$Operator)
 df2$Formulation <- as.factor(df2$Formulation)
 ```
-The boxplots shows the distributions of `BurningRate` under subgroups of (left) five treatments of `Formulation`; (middle) five levels of the first block `RawMaterialBatch`; (right) five levels of the second block `Operator`.
+The boxplots show the distributions of `BurningRate` under subgroups of (left) five treatments of `Formulation`; (middle) five levels of the first block `RawMaterialBatch`; (right) five levels of the second block `Operator`.
 The left plot suggests that there may be differences in the `BurningRate` among the different `Formulations` used. The middle and right plots, show the `BurningRate` behaves differently within each level of blocks. Thus, the AONVA model must take the block effects into account.
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=3.6}
@@ -154,6 +163,12 @@ par(mfrow = c(1, 1))
 ```
 
 
+Multiple comparison is performed solely for the treatment effect, `Formulation`. The following codes demonstrate the use of Tukey’s test and Fisher's LSD method. For Tukey’s test, add the input argument `which = "Formulation"` to only show the test results of comparing differences among the `Formulation` levels. For Fisher's LSD method, specify `trt = "Formulation"` as the input argument to the `LSD.test()` function to show the comparison results among the `Formulation` levels. For information of interpreting the results, please refer to the handout of R codes in Chapter 3.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+TukeyHSD(fit2, which = "Formulation")
+```
+
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
 if (!("agricolae" %in% rownames(installed.packages()))) {
   install.packages("agricolae")  
@@ -164,6 +179,8 @@ out$group
 ```
 
 
+The multiple comparison results indicate that using `Formulation = D` and `Formulation = A` produces the highest mean `BurningRates`, both of which are significantly higher than the `BurningRate` obtained with `Formulation= B`.
+However, there is no statistical evidence to conclude that the mean `BurningRate` under `Formulation = D` is higher than that under `Formulation = A`.
 
 \newpage
 
@@ -175,7 +192,7 @@ df3 <- read.csv(file.path("data", "4_Catalysts.csv"))
 df3$RawMaterialBatch <- as.factor(df3$RawMaterialBatch)
 df3$Catalysts <- as.factor(df3$Catalysts)
 ```
-This burning rate experiment data is obtained by the balanced incomplete block design (BIBD) with $a=4$ `Catalysts` treatment levels and $b=4$ `RawMaterialBatch` block levels. Each treatment levels are performed in $r=3$ blocks, and in each block, $k=3$ treatment levels are performed. The effect model is 
+This catalysts experiment data is obtained by the balanced incomplete block design (BIBD) with $a=4$ `Catalysts` treatment levels and $b=4$ `RawMaterialBatch` block levels. Each treatment levels are performed in $r=3$ blocks, and in each block, $k=3$ treatment levels are performed. The effect model is 
 $$
 y_{ij} = \mu + \tau_i + \beta_j + \varepsilon_{ij},~i=1,...,4,~j=1,...,4
 $$
@@ -248,6 +265,12 @@ plot(
 ```
 
 
+Multiple comparison is performed solely for the treatment effect, `Catalysts`, here. The following codes demonstrate the use of Tukey’s test and Fisher's LSD method. For Tukey’s test, add the input argument `which = "Catalysts"` to only show the test results of comparing differences among the `Catalysts` levels. For Fisher's LSD method, specify `trt = "Catalysts"` as the input argument to the `LSD.test()` function to show the comparison results among the `Catalysts` levels. For information of interpreting the results, please refer to the handout of R codes in Chapter 3.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+TukeyHSD(fit3_treatment, which = "Catalysts")
+```
+
 ```{r, eval=TRUE, echo=TRUE}
 if (!("agricolae" %in% rownames(installed.packages()))) {
   install.packages("agricolae")  
@@ -258,4 +281,4 @@ out$group
 ```
 
 
-
+Although the ANOVA table indicates a statistically significant difference among the treatment means, the post-hoc multiple comparison test shows that all catalysts (1–4) share the same grouping (denoted by letter “`a`”). This means there is no statistical evidence to conclude that the mean `ReactionTime` differs between any pair of `Catalysts.`
