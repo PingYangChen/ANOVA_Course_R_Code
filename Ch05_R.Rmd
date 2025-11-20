@@ -12,6 +12,8 @@ Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Ed
 
 Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
 
+# Chapter 5
+
 ```{r, eval=FALSE, echo=FALSE}
 demo1 <- read.csv(file.path("data", "5_TwoFactorDesign.csv"))
 demo2 <- read.csv(file.path("data", "5_TwoFactorDesignInteraction.csv"))
@@ -20,6 +22,8 @@ demo1$FactorB <- as.factor(demo1$FactorB)
 demo2$FactorA <- as.factor(demo2$FactorA)
 demo2$FactorB <- as.factor(demo2$FactorB)
 ```
+
+
 
 ## Example 5.1 The Battery Life Experiment
 
@@ -32,11 +36,11 @@ df1$Temperature <- as.factor(df1$Temperature)
 ```
 
 
-Use boxplots to observe the differences of `LifeTime` among three levels of `MaterialType`, and, three levels of `Temperature`. 
-We can observe that the average `LifeTime` tends to be lower for higher `Temperature`. 
+Use boxplots to observe the differences of `LifeTime` among three levels of `MaterialType`, and, three levels of `Temperature`. The boxplots show that `MaterialType` affects `LifeTime` that materials 2 and 3 have higher median `LifeTime` than material 1, indicating better durability.
+For `Temperature`, `LifeTime` clearly decreases as temperature increases. The battery last the longest at $15^\circ C$ and the shortest at $125^\circ C$.
 
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 # Draw the grouped boxplot
 par(mfrow = c(1, 2))
 boxplot(LifeTime ~ MaterialType, data = df1)
@@ -46,10 +50,11 @@ boxplot(LifeTime ~ Temperature, data = df1)
 par(mfrow = c(1, 1))
 ```
 
-The effect model
+To analyze this battery lifetime data, we first establish the effect model
 \begin{equation}
 y_{ijk} = \mu + \tau_i + \beta_j + (\tau\beta)_{ij} + \varepsilon_{ijk}
 \end{equation}
+where
 
 - $\tau_i$ is the effect of the $i$th `MaterialType` level, $i = 1, 2, 3$.
 - $\beta_j$ is the effect of the $j$th `Temperature` level, $j = 1, 2, 3$.
@@ -69,14 +74,14 @@ $H_0$: There is no interaction effect between `MaterialType` and `Temperature`
 The function `aov()` fits the ANOVA model, and the ANOVA table is obtained by calling `summary()`. 
 One the left-hand-side of the R model formula `Y ~ X`, input the name of the response variable, i.e. `LifeTime`.
 For factorial design, we test for the significance of the existence of the main effects as well as the the existence of the interaction effects.
-In R model formula, the syntax of the interaction term is `X1:X2`.
+In R model formula, the syntax of the **interaction** term is `X1:X2`.
 In this battery life experiment, there are two factors, and hence the ANOVA model considers two main effects and one two-factor interaction.
-On the right-hand-side of the R model formula, the following two inputs are the same:
+On the right-hand-side of the R model formula, the following two inputs are identical:
 
 - Separately input main effects and two-factor interaction, `MaterialType + Temperature + MaterialType:Temperature`, 
 - Use multiplication `*` to include all interaction terms of the variables in the formula, `MaterialType * Temperature`.
 
-```{r fit1, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 fit1 <- aov(LifeTime ~ MaterialType * Temperature, data = df1)
 summary(fit1)
 ```
@@ -84,7 +89,7 @@ summary(fit1)
 The p-values of both main effects and the interaction are less than the pre-specified significant level 0.05. That is, `MaterialType` and `Temperature` are both significantly related to the battery's `LifeTime`, and, the interaction of `MaterialType` and `Temperature` is also significant.
 
 To visualize the analysis result of the factorial experiment, interaction plot is commonly used tool.
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=5}
 interaction.plot(
   x.factor = df1$Temperature, # x-axis variable
   trace.factor = df1$MaterialType, # variable for lines
@@ -96,14 +101,14 @@ interaction.plot(
 ```
 The plot shows two important conclusions:
 
-- AT low temperature, $15^\circ C$, the lifetime of the battery is generally longer than those battery's in $125^\circ C$ environment. Among all materials, the life time of battery of type 2 material is the longest.
-- AT middle temperature, $70^\circ C$, the lifetime of the battery of type 3 material is the longest.
+- At low temperature, $15^\circ C$, the lifetime of the battery is generally longer than those battery's in $125^\circ C$ environment. Among all materials, the life time of battery of type 2 material is the longest.
+- At middle temperature, $70^\circ C$, the lifetime of the battery of type 3 material is the longest.
 
 
 The procedure of diagnosing the residual is similar to that for the one-way ANOVA model. Please refer to the handout of R codes in Chapter 3 for more details of interpreting the residual plots.
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
-par(mfrow = c(2, 2))
-plot(fit1)
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
+par(mfrow = c(1, 2))
+plot(fit1, which = 1:2)
 # par(mfrow = c(1, 1))
 ```
 ```{r, eval=TRUE, echo = FALSE}
@@ -112,8 +117,8 @@ par(mfrow = c(1, 1))
 
 
 
-One additional plot is to draw the scatter plot of the residual against the levels of each factor. A lack of any visually obvious pattern in the dots on the plot is desired.
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+There are additional scatter plots showing the residual against the levels of each factor. A lack of any visually obvious pattern in the dots on the plot is desired.
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4, fig.height=4}
 plot(
   as.numeric(df1$MaterialType), fit1$residuals,
   xlab = "MaterialType", ylab = "residuals"
@@ -126,15 +131,15 @@ plot(
 
 Multiple comparison is performed for the treatment effect. The following codes demonstrate the use of Tukey’s test and Fisher's LSD method. 
 
-For Tukey’s test, add the input argument `which = c("MaterialType", "Temperature")` to only show the test results of comparing differences among the `ExtPressure` levels. 
+For Tukey’s test, add the input argument `which = c("MaterialType", "Temperature")` to show the test results of comparing differences among the `MaterialType` levels and `Temperature` levels. 
 
-For Fisher's LSD method, specify `trt = c("MaterialType", "Temperature")` as the input argument to the `LSD.test()` function to show the comparison results among the `ExtPressure` levels. For information of interpreting the results, please refer to the handout of R codes in Chapter 3.
+For Fisher's LSD method, specify `trt = c("MaterialType", "Temperature")` as the input argument to the `LSD.test()` function to show the comparison results among the `MaterialType` levels and `Temperature` levels. For information of interpreting the results, please refer to the handout of R codes in Chapter 3.
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 TukeyHSD(fit1, which = c("MaterialType", "Temperature"))
 ```
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 if (!("agricolae" %in% rownames(installed.packages()))) {
   install.packages("agricolae")  
 }
@@ -155,13 +160,12 @@ model.matrix( ~ MaterialType + Temperature, data = df1q)
 
 
 The `lm()` function is used to fit the response surface model.
-
 \begin{align*}
 y & = \beta_0 + \beta_{1a} x_{1a} + \beta_{1b} x_{1b} + \beta_2 x_2 + \beta_{22} x_2^2  \\ 
   & + \beta_{1a2} x_{1a} x_2 + \beta_{1b2} x_{1b} x_2 + \beta_{1a22} x_{1a} x_2^2 + \beta_{1b22} x_{1b} x_2^2 \\
   & + \beta_{222} x_2^3 + \varepsilon
 \end{align*}
-where $x_{1\cdot}$ and $x_2$ are the value of `MaterialType` and `Temperature` respectively, and $\beta$'s are model coefficients.
+where $x_{1\cdot}$ and $x_2$ are the value of `MaterialType` and `Temperature` respectively, and those $\beta$'s are model coefficients.
 
 In R model formula, the syntax indicating the higher order of the explanatory variable is `I(X^p)` where $p$ is the power. The RSM is
 ```{r ols1, eval=TRUE, echo=TRUE}
@@ -171,21 +175,22 @@ ols1 <- lm(
 )
 ```
 
-The `summary()` function for `lm` object is used to show the estimate of the coefficients and their significances. The coefficient estimate of $I(Temperature^3)$ is `NA` value because this cubic effect is aliased to the main effect.
+The `summary()` function for `lm` object is used to show the estimate of the coefficients and their significance. The coefficient estimate of `I(Temperature^3)` is `NA` value because this cubic effect is **aliased** to the main effect.
 
 ```{r, eval=TRUE, echo=TRUE}
 summary(ols1)
 ```
 
-The Result of the RSM:
+The result of the RSM:
 
 For Material Type 1
-$$\text{Life} = + 169.380 - 2.489 \times \text{Temp} + 0.0129 \times \text{Temp}^2$$
+$$\text{Life} = 169.380 - 2.489 \times \text{Temp} + 0.0129 \times \text{Temp}^2$$
 
 For Material Type 2
-$$\text{Life} = + 159.624 - 0.179 \times \text{Temp} + 0.4163 \times \text{Temp}^2$$
+$$\text{Life} = 159.624 - 0.179 \times \text{Temp} + 0.4163 \times \text{Temp}^2$$
 For Material Type 3
-$$\text{Life} = + 132.762 + 0.893 \times \text{Temp} - 0.4322 \times \text{Temp}^2$$
+$$\text{Life} = 132.762 + 0.893 \times \text{Temp} - 0.4322 \times \text{Temp}^2$$
+
 
 ## Example 5.2 Tool Life Experiment (Two Quantitative Factors)
 
@@ -241,6 +246,7 @@ x2m <- mean(df2q$CuttingSpeed)
 # Centralize the variables
 df2q$TotalAngle <- df2q$TotalAngle - x1m
 df2q$CuttingSpeed <- df2q$CuttingSpeed - x2m 
+# Fit the response surface
 ols2 <- lm(
   ToolLife ~ TotalAngle*CuttingSpeed + I(TotalAngle^2) + I(CuttingSpeed^2), 
   data = df2q
@@ -249,7 +255,6 @@ summary(ols2)
 ```
 
 Another choice of the response surface model for two factors is to include all possible interactions of all the second-order terms
-
 \begin{align*}
 y & = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_{12} x_1 x_2 + \beta_{11} x_1^2 + \beta_{22} x_2^2 \\
   & + \beta_{112} x_1^2 x_2 + \beta_{122} x_1 x_2^2 + \beta_{1122} x_1^2 x_2^2 + \varepsilon
@@ -285,7 +290,7 @@ ggplot(rsplot_data) +
 
 ```
 
-As a complementation, here are the codes for 3D plot of the RSM
+We can also draw the interacting 3D plot of the RSM for better visualization.
 ```{r ols2_full_plotly, eval=FALSE, echo=TRUE, fig.align='center', fig.width=8, fig.height=8}
 library(plotly)
 library(htmlwidgets)
@@ -313,6 +318,7 @@ p <- plot_ly(z = rsplot_matrix, type = "surface") %>%
 htmlwidgets::saveWidget(as_widget(p), "plotly_rsm_ch5.html")
 
 ```
+
 
 
 ## One Observation per Cell
@@ -381,8 +387,8 @@ The p-value of the nonadditivity is larger than the significance level 0.05 sugg
 05
 
 
-## Three-Factor Factorial Experiment
 
+## Three-Factor Factorial Experiment
 
 Read the csv file `5_Impurity.csv` in R. Make variables `Carbonation`, `Pressure` and `LineSpeed` to be the type of factor.
 
@@ -410,7 +416,7 @@ $$\varepsilon_{ijkl}\overset{i.i.d.}{\sim}N(0, \sigma^2) \text{ where } \sigma^2
 Totally, there are 7 statistical hypotheses of this problems
 Fit the ANOVA model by `aov()` function, and then print the ANOVA table by calling `summary()`. 
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 fit4 <- aov(FillHeightsDev ~ Carbonation * Pressure * LineSpeed, data = df4)
 summary(fit4)
 ```
@@ -421,10 +427,11 @@ We can further remove all the terms with large p-value and then fit a reduced AN
 y_{ijkl} = \mu + \tau_i + \beta_j + \gamma_k + (\tau\beta)_{ij} + \varepsilon_{ijkl}
 \end{equation}
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
 fit4_r <- aov(
   FillHeightsDev ~ Carbonation + Pressure + LineSpeed + Carbonation:Pressure, 
   data = df4
 )
 summary(fit4_r)
 ```
+
