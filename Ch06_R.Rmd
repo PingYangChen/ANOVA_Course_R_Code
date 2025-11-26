@@ -13,6 +13,8 @@ Textbook: Montgomery, D. C. (2012). *Design and analysis of experiments*, 8th Ed
 
 Online handouts: https://github.com/PingYangChen/ANOVA_Course_R_Code
 
+# Chapter 6
+
 ## $2^2$-Design: Chemical Process Example
  
 Read the csv file `6_ChemicalRecovery.csv` in R.
@@ -62,7 +64,7 @@ summary(fit5)
 The two main effects are significant and their two-factor interaction may not exist.
 
 To visualize the analysis result of the factorial experiment, interaction plot is commonly used tool.
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=4}
 interaction.plot(
   x.factor = df5$ReactConc, # x-axis variable
   trace.factor = df5$CataAmo, # variable for lines
@@ -153,7 +155,7 @@ ols6_reduced <- lm(EachRate ~ NumGap * NumPower, data = df6)
 summary(ols6_reduced)
 ```
 
-```{r ols6_reduced_contour, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+```{r ols6_reduced_contour, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=4}
 x1_grid <- seq(min(df6$NumGap), max(df6$NumGap), length = 100)
 x2_grid <- seq(min(df6$NumPower), max(df6$NumPower), length = 100)
 newx <- data.frame(
@@ -253,6 +255,63 @@ summary(fit7)
 
 Here, we left the interpretation of the response surface model for practice.
 
+
+
+## Addition of Center Points to a $2^k$ Designs 
+
+Recall the Resin Plant Experiment. Read the csv file `6_PilotPlant.csv` in R.
+
+```{r df7a, eval=TRUE, echo=TRUE}
+df7 <- read.csv(file.path("data", "6_PilotPlant.csv"))
+```
+
+```{r df7c, eval=TRUE, echo=TRUE}
+df7_C <- data.frame(
+  Temperature = rep(0, 4),
+  Pressure = rep(0, 4),
+  CH2OConc = rep(0, 4),
+  StirRate = rep(0, 4),
+  FiltrationRate = c(73, 75, 66, 69)
+)
+```
+
+The calculation of $SS_{Pure quadratic}$ with degree of freedom 1.
+```{r sspq, eval=TRUE, echo=TRUE}
+Yf_bar <- mean(df7$FiltrationRate)
+Yc_bar <- mean(df7_C$FiltrationRate)
+nf <- nrow(df7)
+nc <- nrow(df7_C)
+SS_pureQuad <- nf*nc*(Yf_bar - Yc_bar)^2/(nf + nc)
+```
+
+The calculation of $SS_{E}$ with degree of freedom $n_c - 1$.
+
+```{r sse, eval=TRUE, echo=TRUE}
+SS_E <- sum((df7_C$FiltrationRate - mean(df7_C$FiltrationRate))^2)
+```
+
+To test the significance of the Curvature, we compute the ratio of $MS_{Pure quadratic}$ and $MS_{E}$ as the $F$-statistic which follows the $F$ distribution with degrees of freedom 1 and $n_c - 1$.
+```{r, eval=TRUE, echo=TRUE}
+MS_pureQuad <- SS_pureQuad/1
+MS_E <- SS_E/(nc - 1)
+fval <- MS_pureQuad/MS_E
+pval <- 1 - pf(fval, 1, nc - 1) # p-value
+```
+
+The part of the testing the significance of the Curvature of the ANOVA table.
+```{r, eval=TRUE, echo=TRUE}
+print(data.frame(
+  Source = c("Curvature", "Residual"),
+  SS = c(SS_pureQuad, SS_E),
+  DF = c(1, nc - 1), 
+  MS = c(MS_pureQuad, MS_E),
+  "F" = c(sprintf("%.3f", fval), ""),
+  "Pr(>F)" = c(sprintf("%.3f", pval), "")
+))
+```
+
+
+
 <!--
 ```{r, eval=TRUE, echo=TRUE}
 df8 <- read.csv(file.path("data", "6_Drilling.csv"))
@@ -314,56 +373,3 @@ df10 <- read.csv(file.path("data", "6_Wafer.csv"))
 df11 <- read.csv(file.path("data", "6_CreditCardMarketing.csv"))
 ```
 -->
-
-## Addition of Center Points to a $2^k$ Designs 
-
-Recall the Resin Plant Experiment. Read the csv file `6_PilotPlant.csv` in R.
-
-```{r df7a, eval=TRUE, echo=TRUE}
-df7 <- read.csv(file.path("data", "6_PilotPlant.csv"))
-```
-
-```{r df7c, eval=TRUE, echo=TRUE}
-df7_C <- data.frame(
-  Temperature = rep(0, 4),
-  Pressure = rep(0, 4),
-  CH2OConc = rep(0, 4),
-  StirRate = rep(0, 4),
-  FiltrationRate = c(73, 75, 66, 69)
-)
-```
-
-The calculation of $SS_{Pure quadratic}$ with degree of freedom 1.
-```{r sspq, eval=TRUE, echo=TRUE}
-Yf_bar <- mean(df7$FiltrationRate)
-Yc_bar <- mean(df7_C$FiltrationRate)
-nf <- nrow(df7)
-nc <- nrow(df7_C)
-SS_pureQuad <- nf*nc*(Yf_bar - Yc_bar)^2/(nf + nc)
-```
-
-The calculation of $SS_{E}$ with degree of freedom $n_c - 1$.
-
-```{r sse, eval=TRUE, echo=TRUE}
-SS_E <- sum((df7_C$FiltrationRate - mean(df7_C$FiltrationRate))^2)
-```
-
-To test the significance of the Curvature, we compute the ratio of $MS_{Pure quadratic}$ and $MS_{E}$ as the $F$-statistic which follows the $F$ distribution with degrees of freedom 1 and $n_c - 1$.
-```{r, eval=TRUE, echo=TRUE}
-MS_pureQuad <- SS_pureQuad/1
-MS_E <- SS_E/(nc - 1)
-fval <- MS_pureQuad/MS_E
-pval <- 1 - pf(fval, 1, nc - 1) # p-value
-```
-
-The part of the testing the significance of the Curvature of the ANOVA table.
-```{r, eval=TRUE, echo=TRUE}
-print(data.frame(
-  Source = c("Curvature", "Residual"),
-  SS = c(SS_pureQuad, SS_E),
-  DF = c(1, nc - 1), 
-  MS = c(MS_pureQuad, MS_E),
-  "F" = c(sprintf("%.3f", fval), ""),
-  "Pr(>F)" = c(sprintf("%.3f", pval), "")
-))
-```
