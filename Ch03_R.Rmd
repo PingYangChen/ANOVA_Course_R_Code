@@ -345,7 +345,7 @@ Referring back to Section 3.4.3, to address the issue of unequal variances among
 ![](image/ch03_boxcox.png)
 
 
-For R users, there are various ways to implement the Box-Cox transformation. Here, we demostrate the use of the `boxcox` function in the **MASS** package. 
+For R users, there are various ways to implement the Box-Cox transformation. Here, we demonstrate the use of the `boxcox` function in the **MASS** package. 
 
 ```{r, eval=TRUE, echo=TRUE, warning=FALSE, message=FALSE, fig.align='center', fig.width=4, fig.height=4}
 # Load the MASS package to apply the Box-Cox transformation

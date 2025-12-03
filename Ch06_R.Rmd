@@ -209,11 +209,11 @@ halfqqnorm <- function(input, tol = 0.5) {
 	     xlab = "|Effects|", ylab = "Half Normal Probability")
 	title("Half Normal Plot")
 	# choose anchor point to draw a straight line
-	s <- min(which(diff(y)/diff(range(y)) > 1/(length(y)-1)))
+	s <- min(which(diff(y)/diff(range(y)) > 1/(length(y) - 1)))
 	abline(a = -y[1]*(nq[s]-nq[1])/(y[s]-y[1]), b = (nq[s]-nq[1])/(y[s]-y[1]))
 	axis(2, at = qnorm(seq(0.5, 0.9999, length = 5)), 
 	     labels = round(seq(0, 1, length = 5),2))
-	loc <- sqrt((nq - (y - y[1])*(nq[s]-nq[1])/(y[s]-y[1]))^2) > tol
+	loc <- sqrt((nq - (y - y[1])*(nq[s] - nq[1])/(y[s] - y[1]))^2) > tol
 	if (is.null(names(y))) {
 		text(y[loc], nq[loc], order(abs(input))[loc], pos = 2)
 	} else {
@@ -311,18 +311,66 @@ print(data.frame(
 ```
 
 
-
 <!--
-```{r, eval=TRUE, echo=TRUE}
+## Variance-stabilizing transformation: The Drilling Experiment
+
+Read the csv file `6_Drilling.csv` in R.
+```{r df8, eval=TRUE, echo=TRUE}
 df8 <- read.csv(file.path("data", "6_Drilling.csv"))
 ```
+
+The estimation of factor effects are:
+```{r eff8, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+# Compute the model matrix of all effect terms without intercept
+mmat8 <- model.matrix( ~ Load*FlowRate*RotatSp*MudType - 1, data = df8)
+# Calculate the effect sizes using the +/- signs of the model matrix
+eff8 <- numeric(ncol(mmat8))
+for (i in 1:ncol(mmat8)) {
+  eff8[i] <- 2*mean(df8$AdvRate*mmat8[,i])
+}
+names(eff8) <- colnames(mmat8)
+```
+
+```{r, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
+print(data.frame(
+  Factor = names(eff8),
+  "Est.Effect" = as.vector(eff8)
+))
+```
+
+There is no replicates in each treatment combination, the estimate of the random error $\sigma^2$ does not exist and the ANOVA table is not available. Hence, we draw the half-Normal plot to identify effective effects. 
+
+```{r h8, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=5}
+halfqqnorm(eff8, tol = 0.25)
+```
+
+By the half Normal plot, we find out that the main effects `FlowRate`, `RotatSp`and `MudType` and interactions `FlowRate:RotatSp`, `FlowRate:MudType` appear to be large.
+
+Based on the observation from the half Normal plot, now the ANOVA model is
+
+\begin{equation}
+y_{ijkl} = \mu + \tau_i + \beta_j + \gamma_k + (\tau\beta)_{ij} + (\tau\gamma)_{ik} + \varepsilon_{ijkl}
+\end{equation}
+
+- $\tau_i$ is the effect of the $i$th `FlowRate` level, $i = 1, 2$.
+- $\beta_j$ is the effect of the $j$th `RotatSp` level, $j = 1, 2$.
+- $\gamma_k$ is the effect of the $k$th `MudType` level, $j = 1, 2$.
+- $(\tau\beta)_{ij}$ is the interaction effect of the $i$th `FlowRate` level and the $j$th `RotatSp` level.
+- $(\tau\gamma)_{ij}$ is the interaction effect of the $i$th `FlowRate` level and the $k$th `MudType` level.
+- $\varepsilon_{ijkl}$ is the random error, $l = 1, 2$, satisfying
+$$\varepsilon_{ijkl}\overset{i.i.d.}{\sim}N(0, \sigma^2) \text{ where } \sigma^2 \text{ is the conatnt variance.}$$
+
+Use `aov()` to fit the ANOVA model.
 
 ```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
 fit8 <- aov(AdvRate ~ factor(FlowRate) * (factor(RotatSp) + factor(MudType)), data = df8)
 summary(fit8)
 ```
 
-```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5, fig.height=5}
+To further examine the potential interaction effects, we inspect the interaction plots for `FlowRate:RotatSp` and `FlowRate:MudType`. In both panels, the lines for the two levels of the secondary factor remain roughly parallel across the range of `FlowRate`. This indicates that any interaction effect is minimal. In other words, changes in `FlowRate` appear to influence `AdvRate` similarly across different levels of `RotatSp` and `MudType`, and no strong visual evidence of interaction can be observed from these plots.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
+par(mfrow = c(1, 2))
 interaction.plot(
   x.factor = df8$FlowRate, # x-axis variable
   trace.factor = df8$RotatSp, # variable for lines
@@ -341,6 +389,100 @@ interaction.plot(
   lty = 1, lwd = 3, trace.label = "MudType"
 )
 ```
+
+```{r, echo=FALSE, eval=TRUE}
+par(mfrow = c(1, 1))
+```
+
+
+If we examine the residual plots, in the scatter plot of fitted values versus residuals, we notice an increasing trend in the variation of residuals. In addition, the QQ plot residuals implies the normality assumption may be violated.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
+# Diagnostic plots for the original ANOVA model
+par(mfrow = c(1, 2))
+plot(fit8, which = 1:2)
+```
+```{r, eval=TRUE, echo=FALSE}
+par(mfrow = c(1, 1))
+```
+
+To address the model assumption violation issues, a common approach is to apply the Box-Cox transformation. Please refer to Chapter 3 for more details. For R users, there are various ways to implement this technique. Here, we demonstrate the use of the `boxcox` function in the **MASS** package. 
+```{r, eval=TRUE, echo=TRUE, warning=FALSE, message=FALSE, fig.align='center', fig.width=4, fig.height=4}
+# Load the MASS package to apply the Box-Cox transformation
+library(MASS)
+# Apply the Box-Cox transformation to the ANOVA model to stabilize the variance
+fit8bc <- boxcox(fit8, plotit = TRUE)
+```
+
+
+```{r, eval=TRUE, echo=TRUE, warning=FALSE, message=FALSE, fig.align='center', fig.width=4, fig.height=4}
+# Extract the lambda value corresponding to the maximum likelihood estimate
+lambda <- fit8bc$x[which.max(fit8bc$y)]
+# Print the estimated lambda for the Box-Cox transformation
+sprintf("lambda = %.3f", lambda)
+```
+
+Copy the data `df8` and add a column with transformed `AdvRate`, named `TransAdvRate`.
+```{r df8s, eval=TRUE, echo=TRUE}
+df8s <- df8
+df8s$TransAdvRate <- (df8$AdvRate^lambda - 1)/lambda
+```
+
+Compute the estimation of factor effects for the new response variable.
+```{r eff8s, eval=TRUE, echo=TRUE, fig.align='center', fig.width=5}
+# Compute the model matrix of all effect terms without intercept
+mmat8s <- model.matrix( ~ Load*FlowRate*RotatSp*MudType - 1, data = df8s)
+# Calculate the effect sizes using the +/- signs of the model matrix
+eff8s <- numeric(ncol(mmat8s))
+for (i in 1:ncol(mmat8s)) {
+  eff8s[i] <- 2*mean(df8s$TransAdvRate*mmat8s[,i])
+}
+names(eff8s) <- colnames(mmat8s)
+```
+
+```{r, eval=TRUE, echo=FALSE, fig.align='center', fig.width=5}
+print(data.frame(
+  Factor = names(eff8s), "Est.Effect" = as.vector(eff8s)
+))
+```
+Draw the half-Normal plot again for the new data. 
+```{r h8s, eval=TRUE, echo=TRUE, fig.align='center', fig.width=6, fig.height=5}
+halfqqnorm(eff8s)
+```
+By the half Normal plot, we find out that only the main effects `FlowRate`, `RotatSp` and `MudType` appear to be large for the transformed response variable `TransAdvRate`. So the refined ANOVA model is
+
+\begin{equation}
+y_{ijkl} = \mu + \tau_i + \beta_j + \gamma_k + \varepsilon_{ijkl}
+\end{equation}
+
+- $\tau_i$ is the effect of the $i$th `FlowRate` level, $i = 1, 2$.
+- $\beta_j$ is the effect of the $j$th `RotatSp` level, $j = 1, 2$.
+- $\gamma_k$ is the effect of the $k$th `MudType` level, $j = 1, 2$.
+- $\varepsilon_{ijkl}$ is the random error, $l = 1, 2$, satisfying
+$$\varepsilon_{ijkl}\overset{i.i.d.}{\sim}N(0, \sigma^2) \text{ where } \sigma^2 \text{ is the conatnt variance.}$$
+
+Use `aov()` to refit the ANOVA model.
+
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=4}
+# Fit a new ANOVA model using the transformed 'TransAdvRate'
+fit8s <- aov(TransAdvRate ~ factor(FlowRate) + factor(RotatSp) + factor(MudType), data = df8s)
+# Summary of the new ANOVA results after transformation
+summary(fit8s)
+```
+
+The p-values of the F-test in this new ANOVA table are extremely small, providing strong evidence that the mean `TransAdvRate` differs across levels of each treatment. The residual plots confirm that the assumptions of normality and constant variance are satisfied.
+
+```{r, eval=TRUE, echo=TRUE, fig.align='center', fig.width=7, fig.height=4}
+# Diagnostic plots for the transformed ANOVA model
+par(mfrow = c(1, 2))
+plot(fit8s, which = 1:2)
+```
+```{r, eval=TRUE, echo=FALSE}
+par(mfrow = c(1, 1))
+```
+
+
 
 ```{r, eval=TRUE, echo=TRUE}
 df9 <- read.csv(file.path("data", "6_Sidewall.csv"))
